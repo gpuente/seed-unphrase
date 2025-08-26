@@ -12,8 +12,8 @@ import {
   generateSaltTransforms,
   applySaltTransformation,
   reverseSaltTransformation
-} from '../lib/utils';
-import { SeedPhraseError, ErrorCodes } from '../lib/types';
+} from '../src/utils';
+import { SeedPhraseError, ErrorCodes } from '../src/types';
 
 describe('utils', () => {
   describe('formatIndex', () => {

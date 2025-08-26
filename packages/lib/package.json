@@ -1,0 +1,67 @@
+{
+  "name": "@seed-unphrase/lib",
+  "version": "1.0.0",
+  "description": "Core library for seed phrase concealing/revealing with salt-enhanced security",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js", 
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "crypto",
+    "seed-phrase",
+    "mnemonic",
+    "bitcoin",
+    "ethereum",
+    "wallet",
+    "security",
+    "encryption",
+    "bip39",
+    "library"
+  ],
+  "author": "",
+  "license": "ISC",
+  "files": [
+    "dist/**/*"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./encoder": {
+      "types": "./dist/encoder.d.ts",
+      "default": "./dist/encoder.js"
+    },
+    "./decoder": {
+      "types": "./dist/decoder.d.ts", 
+      "default": "./dist/decoder.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "default": "./dist/utils.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./wordlist": {
+      "types": "./dist/wordlist.d.ts",
+      "default": "./dist/wordlist.js"
+    }
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.3.0",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.1",
+    "typescript": "^5.9.2"
+  }
+}

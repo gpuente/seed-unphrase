@@ -16,9 +16,17 @@ export {
 
 // Export utilities
 export {
+  formatIndex,
   parseWords,
+  buildNumberFromIndices,
+  parseNumberToIndices,
+  divideWithRemainder,
+  multiplyAndAdd,
   validateCipherKey,
   parseConcealedValue,
   formatConcealedValue,
-  validatePhraseLength
+  validatePhraseLength,
+  generateSaltTransforms,
+  applySaltTransformation,
+  reverseSaltTransformation
 } from './utils';

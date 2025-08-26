@@ -1,5 +1,5 @@
-import { concealSeedPhrase, validateSeedPhrase, formatConcealResult } from '../lib/encoder';
-import { SeedPhraseError } from '../lib/types';
+import { concealSeedPhrase, validateSeedPhrase, formatConcealResult } from '../src/encoder';
+import { SeedPhraseError } from '../src/types';
 import * as fs from 'fs';
 
 // Mock fs module for testing

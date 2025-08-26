@@ -1,0 +1,57 @@
+{
+  "name": "@seed-unphrase/cli",
+  "version": "1.0.0",
+  "description": "CLI tool to securely hide and reveal crypto seed phrases using personal cipher keys",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
+  "bin": {
+    "seed-concealer": "dist/src/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start": "npm run build && node dist/src/cli.js",
+    "dev": "ts-node src/cli.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build && npm test",
+    "lint": "echo 'No linting configured yet'",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "crypto",
+    "seed-phrase",
+    "mnemonic",
+    "bitcoin",
+    "ethereum",
+    "wallet",
+    "security",
+    "encryption",
+    "cli",
+    "bip39"
+  ],
+  "author": "",
+  "license": "ISC",
+  "files": [
+    "dist/**/*",
+    "english.txt",
+    "README.md"
+  ],
+  "devDependencies": {
+    "@types/inquirer": "^9.0.9",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.3.0",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@seed-unphrase/lib": "workspace:*",
+    "chalk": "^5.6.0",
+    "commander": "^14.0.0",
+    "inquirer": "^12.9.4"
+  }
+}

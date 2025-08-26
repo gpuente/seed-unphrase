@@ -1,5 +1,5 @@
-import { revealSeedPhrase, formatRevealResult } from '../lib/decoder';
-import { concealSeedPhrase } from '../lib/encoder';
+import { revealSeedPhrase, formatRevealResult } from '../src/decoder';
+import { concealSeedPhrase } from '../src/encoder';
 import * as fs from 'fs';
 
 // Mock fs module for testing

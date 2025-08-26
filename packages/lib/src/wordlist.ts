@@ -1,22 +1,15 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import wordlistJson from './wordlist.json';
 import { WordListData, SeedPhraseError, ErrorCodes } from './types';
 
 let cachedWordList: WordListData | null = null;
 
-export function loadWordList(wordListPath?: string): WordListData {
+export function loadWordList(): WordListData {
   if (cachedWordList) {
     return cachedWordList;
   }
 
-  const filePath = wordListPath || path.join(__dirname, '..', 'english.txt');
-  
   try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const words = content
-      .split('\n')
-      .map(word => word.trim())
-      .filter(word => word.length > 0);
+    const words = wordlistJson;
 
     if (words.length === 0) {
       throw new SeedPhraseError('Word list is empty', ErrorCodes.WORDLIST_LOAD_ERROR);
@@ -37,7 +30,7 @@ export function loadWordList(wordListPath?: string): WordListData {
       throw error;
     }
     throw new SeedPhraseError(
-      `Failed to load word list from ${filePath}: ${error}`,
+      `Failed to load word list: ${error}`,
       ErrorCodes.WORDLIST_LOAD_ERROR
     );
   }

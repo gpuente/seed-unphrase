@@ -8,7 +8,7 @@ import {
   revealSeedPhrase, 
   formatConcealResult, 
   formatRevealResult 
-} from '../lib';
+} from '@seed-unphrase/lib';
 
 const program = new Command();
 
@@ -86,7 +86,7 @@ async function concealFlow(): Promise<void> {
     if (validation.invalidWords.length > 0) {
       console.log(chalk.red.bold('\n⚠️  Warning: Invalid words detected!'));
       console.log(chalk.red('The following words were not found in the BIP39 word list:'));
-      validation.invalidWords.forEach(word => {
+      validation.invalidWords.forEach((word: string) => {
         console.log(chalk.red(`  • ${word}`));
       });
       console.log(chalk.yellow('These words were replaced with index 0 (word: "abandon")\n'));

@@ -1,4 +1,4 @@
-import { concealSeedPhrase, revealSeedPhrase } from '../lib';
+import { concealSeedPhrase, revealSeedPhrase } from '../src';
 import * as fs from 'fs';
 import * as path from 'path';
 
