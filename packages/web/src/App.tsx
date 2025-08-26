@@ -7,6 +7,7 @@ import ModeToggle from './components/ModeToggle';
 import ConcealForm from './components/ConcealForm';
 import RevealForm from './components/RevealForm';
 import SecurityIndicator from './components/SecurityIndicator';
+import InstallPrompt from './components/InstallPrompt';
 import './styles/globals.css';
 
 export type AppMode = 'conceal' | 'reveal';
@@ -183,6 +184,9 @@ function App() {
           },
         }}
       />
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
