@@ -15,6 +15,7 @@ export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // Check if already installed (standalone mode)
@@ -26,7 +27,28 @@ export default function InstallPrompt() {
       return;
     }
 
-    // Listen for the beforeinstallprompt event
+    // Detect platform
+    const userAgent = navigator.userAgent.toLowerCase();
+    const iOS = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
+    
+    setIsIOS(iOS);
+
+    // Check if user has dismissed the prompt before
+    const hasBeenDismissed = localStorage.getItem('installPromptDismissed') === 'true';
+    
+    if (hasBeenDismissed) {
+      return;
+    }
+
+    // For iOS Safari, show after delay if not in standalone mode
+    if (iOS && !isIOSInstalled) {
+      setTimeout(() => {
+        setShowInstallPrompt(true);
+      }, 5000);
+      return;
+    }
+
+    // Listen for the beforeinstallprompt event (Android/Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -54,36 +76,57 @@ export default function InstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    try {
-      await deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      
-      if (choiceResult.outcome === 'accepted') {
-        setShowInstallPrompt(false);
+    if (deferredPrompt) {
+      // Android/Chrome install
+      try {
+        await deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        
+        if (choiceResult.outcome === 'accepted') {
+          setShowInstallPrompt(false);
+        }
+        
+        setDeferredPrompt(null);
+      } catch (error) {
+        console.error('Install prompt failed:', error);
       }
-      
-      setDeferredPrompt(null);
-    } catch (error) {
-      console.error('Install prompt failed:', error);
+    } else {
+      // For iOS or when no prompt available, just hide the component
+      setShowInstallPrompt(false);
     }
   };
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
-    // Don't show again for this session
-    sessionStorage.setItem('installPromptDismissed', 'true');
+    // Don't show again for 7 days
+    localStorage.setItem('installPromptDismissed', 'true');
+    localStorage.setItem('installPromptDismissedAt', Date.now().toString());
   };
 
-  // Don't show if already installed or dismissed this session
-  if (isInstalled || sessionStorage.getItem('installPromptDismissed')) {
+  // Check if 7 days have passed since dismissal
+  const checkDismissalExpiry = () => {
+    const dismissedAt = localStorage.getItem('installPromptDismissedAt');
+    if (dismissedAt) {
+      const sevenDays = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      const now = Date.now();
+      if (now - parseInt(dismissedAt) > sevenDays) {
+        localStorage.removeItem('installPromptDismissed');
+        localStorage.removeItem('installPromptDismissedAt');
+        return false;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // Don't show if already installed or dismissed recently
+  if (isInstalled || checkDismissalExpiry()) {
     return null;
   }
 
   return (
     <AnimatePresence>
-      {showInstallPrompt && deferredPrompt && (
+      {showInstallPrompt && (isIOS || deferredPrompt) && (
         <motion.div
           initial={{ opacity: 0, y: 100, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -118,7 +161,10 @@ export default function InstallPrompt() {
                 </div>
                 
                 <p className="text-xs text-gray-800 mb-3">
-                  Add to your home screen for quick access and offline use
+                  {isIOS 
+                    ? "Tap the Share button below, then 'Add to Home Screen'" 
+                    : "Add to your home screen for quick access and offline use"
+                  }
                 </p>
                 
                 <div className="flex gap-2">
@@ -127,7 +173,7 @@ export default function InstallPrompt() {
                     className="flex-1 bg-white/90 hover:bg-white text-gray-900 text-xs font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Download size={14} />
-                    Install App
+                    {isIOS ? "Got it!" : "Install App"}
                   </button>
                   
                   <button
