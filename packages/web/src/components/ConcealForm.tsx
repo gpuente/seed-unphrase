@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Key, Hash, Lock, AlertCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -127,45 +127,24 @@ const ConcealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Con
   }
 
   return (
-    <motion.form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="text-center mb-8">
-        <motion.div
-          className="inline-flex items-center space-x-2 text-2xl font-bold text-transparent bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text mb-2"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div className="inline-flex items-center space-x-2 text-2xl font-bold text-transparent bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text mb-2">
           <Lock size={28} className="text-purple-500" />
           <span>Conceal Seed Phrase</span>
-        </motion.div>
-        <motion.p
-          className="text-slate-400"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        </div>
+        <p className="text-slate-400">
           Transform your seed phrase into a secure concealed value
-        </motion.p>
+        </p>
       </div>
 
       {/* Seed Phrase Input */}
-      <motion.div
-        className="space-y-2"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.1 }}
-      >
+      <div className="space-y-2">
         <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
           <Sparkles size={16} className="text-purple-400" />
           <span>Seed Phrase</span>
         </label>
-        <motion.textarea
+        <textarea
           {...register('seedPhrase', {
             required: 'Seed phrase is required',
             validate: (value) => {
@@ -184,36 +163,25 @@ const ConcealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Con
           placeholder="Enter your seed phrase (space-separated words)..."
           rows={4}
           disabled={isProcessing}
-          whileFocus={{ scale: 1.01 }}
         />
         <AnimatePresence>
           {errors.seedPhrase && (
-            <motion.div
-              className="flex items-center space-x-2 text-red-400 text-sm"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
+            <div className="flex items-center space-x-2 text-red-400 text-sm">
               <AlertCircle size={16} />
               <span>{errors.seedPhrase.message}</span>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Cipher Key Input */}
-      <motion.div
-        className="space-y-2"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      <div className="space-y-2">
         <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
           <Key size={16} className="text-cyan-400" />
           <span>Cipher Key</span>
         </label>
         <div className="relative">
-          <motion.input
+          <input
             {...register('cipherKey', {
               required: 'Cipher key is required',
               validate: (value) => {
@@ -237,41 +205,28 @@ const ConcealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Con
             `}
             placeholder="Enter your cipher key (any positive number)..."
             disabled={isProcessing}
-            whileFocus={{ scale: 1.01 }}
-          />
-          <motion.button
+            />
+          <button
             type="button"
             onClick={() => setShowCipherKey(!showCipherKey)}
             className="absolute right-3 text-slate-400 hover:text-slate-300 transition-colors"
             style={{ top: '50%', marginTop: '-10px' }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
           >
             {showCipherKey ? <EyeOff size={20} /> : <Eye size={20} />}
-          </motion.button>
+          </button>
         </div>
         <AnimatePresence>
           {errors.cipherKey && (
-            <motion.div
-              className="flex items-center space-x-2 text-red-400 text-sm"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
+            <div className="flex items-center space-x-2 text-red-400 text-sm">
               <AlertCircle size={16} />
               <span>{errors.cipherKey.message}</span>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Salt Toggle */}
-      <motion.div
-        className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-600/50 rounded-xl"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-800/30 border border-slate-600/50 rounded-xl">
         <div className="flex items-center space-x-3">
           <Hash size={20} className="text-emerald-400" />
           <div>
@@ -279,64 +234,53 @@ const ConcealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Con
             <p className="text-sm text-slate-400">Add salt for maximum protection against brute force</p>
           </div>
         </div>
-        <motion.button
+        <button
           type="button"
           onClick={toggleSalt}
           className={`
-            relative w-12 h-6 rounded-full transition-colors duration-300
+            relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0
             ${useSalt ? 'bg-emerald-500' : 'bg-slate-600'}
           `}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
-          <motion.div
-            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md"
-            animate={{ x: useSalt ? 24 : 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          <div
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+              useSalt ? 'translate-x-6' : 'translate-x-0'
+            }`}
           />
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
 
       {/* Salt Input */}
       <AnimatePresence>
         {useSalt && (
-          <motion.div
-            className="space-y-2"
-            initial={{ opacity: 0, height: 0, y: -20 }}
-            animate={{ opacity: 1, height: 'auto', y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
+          <div className="space-y-2">
             <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
               <Hash size={16} className="text-emerald-400" />
               <span>Salt Value</span>
             </label>
             <div className="relative">
-              <motion.input
+              <input
                 {...register('salt')}
                 type={showSalt ? 'text' : 'password'}
                 className="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 placeholder="Enter your salt (any text for enhanced security)..."
                 disabled={isProcessing}
-                whileFocus={{ scale: 1.01 }}
-              />
-              <motion.button
+                    />
+              <button
                 type="button"
                 onClick={() => setShowSalt(!showSalt)}
                 className="absolute right-3 text-slate-400 hover:text-slate-300 transition-colors"
                 style={{ top: '50%', marginTop: '-10px' }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
               >
                 {showSalt ? <EyeOff size={20} /> : <Eye size={20} />}
-              </motion.button>
+              </button>
             </div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       {/* Submit Button */}
-      <motion.button
+      <button
         type="submit"
         disabled={isProcessing}
         className={`
@@ -347,41 +291,22 @@ const ConcealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Con
           }
           focus:outline-none focus:ring-2 focus:ring-purple-500/50
         `}
-        whileHover={!isProcessing ? { scale: 1.02, y: -1 } : undefined}
-        whileTap={!isProcessing ? { scale: 0.98 } : undefined}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
       >
         <AnimatePresence mode="wait">
           {isProcessing ? (
-            <motion.div
-              className="flex items-center justify-center space-x-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               <span>Concealing...</span>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
-              className="flex items-center justify-center space-x-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <div className="flex items-center justify-center space-x-2">
               <Lock size={20} />
               <span>Conceal Seed Phrase</span>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
-      </motion.button>
-    </motion.form>
+      </button>
+    </form>
   );
 };
 

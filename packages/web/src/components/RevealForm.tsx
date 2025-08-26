@@ -49,7 +49,7 @@ const RevealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Reve
       hasSalt: !!hasSalt
     };
     onSecurityChange(newSecurity);
-  }, [useSalt, saltValue, onSecurityChange]);
+  }, [useSalt, saltValue]);
 
   const onSubmit = async (data: RevealFormData) => {
     setValidationErrors([]);
@@ -267,12 +267,7 @@ const RevealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Reve
       </motion.div>
 
       {/* Salt Toggle */}
-      <motion.div
-        className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-600/50 rounded-xl"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-800/30 border border-slate-600/50 rounded-xl">
         <div className="flex items-center space-x-3">
           <Hash size={20} className="text-emerald-400" />
           <div>
@@ -280,23 +275,21 @@ const RevealForm = ({ onSecurityChange, onProcessingChange, isProcessing }: Reve
             <p className="text-sm text-slate-400">Use the same salt that was used for concealment</p>
           </div>
         </div>
-        <motion.button
+        <button
           type="button"
           onClick={toggleSalt}
           className={`
-            relative w-12 h-6 rounded-full transition-colors duration-300
+            relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0
             ${useSalt ? 'bg-emerald-500' : 'bg-slate-600'}
           `}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
-          <motion.div
-            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md"
-            animate={{ x: useSalt ? 24 : 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          <div
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+              useSalt ? 'translate-x-6' : 'translate-x-0'
+            }`}
           />
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
 
       {/* Salt Input */}
       <AnimatePresence>

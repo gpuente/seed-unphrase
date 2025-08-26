@@ -142,24 +142,13 @@ const ResultDisplay = ({ mode, result, onNewAction, validationErrors = [], metad
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        whileHover={{ scale: 1.01 }}
       >
-        {/* Background glow */}
-        <motion.div
-          className={`absolute -inset-0.5 bg-gradient-to-r ${
+        {/* Static background glow */}
+        <div className={`absolute -inset-0.5 bg-gradient-to-r ${
             mode === 'conceal' 
               ? 'from-purple-500/20 to-purple-600/20' 
               : 'from-cyan-500/20 to-cyan-600/20'
-          } rounded-xl blur opacity-50`}
-          animate={{
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
+          } rounded-xl blur opacity-40`} />
 
         <div className="relative">
           <div className="flex items-center justify-between mb-4">

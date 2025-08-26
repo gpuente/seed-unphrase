@@ -11,7 +11,6 @@ interface FloatingShape {
 }
 
 const Background = () => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [shapes, setShapes] = useState<FloatingShape[]>([]);
   const [particles, setParticles] = useState<Array<{x: number, y: number}>>([]);
 
@@ -25,7 +24,7 @@ const Background = () => {
         'rgba(16, 185, 129, 0.1)', // Emerald
       ];
 
-      const newShapes: FloatingShape[] = Array.from({ length: 8 }, (_, i) => ({
+      const newShapes: FloatingShape[] = Array.from({ length: 3 }, (_, i) => ({
         id: i,
         x: Math.random() * 100,
         y: Math.random() * 100,
@@ -41,7 +40,7 @@ const Background = () => {
     
     // Generate particle positions
     const generateParticles = () => {
-      const newParticles = Array.from({ length: 50 }, () => ({
+      const newParticles = Array.from({ length: 10 }, () => ({
         x: Math.random() * 100,
         y: Math.random() * 100,
       }));
@@ -51,59 +50,20 @@ const Background = () => {
     generateParticles();
   }, []);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 100,
-        y: (e.clientY / window.innerHeight) * 100,
-      });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
       {/* Base gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
       
-      {/* Animated mesh gradient overlay */}
-      <motion.div
-        className="absolute inset-0 opacity-30"
-        animate={{
-          background: [
-            'radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%)',
-            'radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.3) 0%, transparent 50%)',
-            'radial-gradient(circle at 40% 80%, rgba(245, 158, 11, 0.3) 0%, transparent 50%)',
-            'radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%)',
-          ],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear",
+      {/* Static mesh gradient overlay */}
+      <div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          background: 'radial-gradient(circle at 30% 40%, rgba(139, 92, 246, 0.3) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(6, 182, 212, 0.2) 0%, transparent 50%)'
         }}
       />
 
-      {/* Mouse-following gradient */}
-      <motion.div
-        className="absolute w-96 h-96 rounded-full opacity-20"
-        style={{
-          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%)',
-          filter: 'blur(40px)',
-        }}
-        animate={{
-          x: `${mousePosition.x - 12}%`,
-          y: `${mousePosition.y - 12}%`,
-        }}
-        transition={{
-          type: "spring",
-          damping: 100,
-          stiffness: 5,
-          mass: 5,
-        }}
-      />
 
       {/* Floating geometric shapes */}
       {shapes.map((shape) => (
@@ -121,15 +81,13 @@ const Background = () => {
             y: `${shape.y}%`,
           }}
           animate={{
-            x: [`${shape.x}%`, `${(shape.x + 20) % 100}%`, `${shape.x}%`],
-            y: [`${shape.y}%`, `${(shape.y + 15) % 100}%`, `${shape.y}%`],
-            scale: [1, 1.2, 1],
-            rotate: [0, 180, 360],
+            y: [`${shape.y}%`, `${(shape.y + 10) % 100}%`, `${shape.y}%`],
+            scale: [1, 1.1, 1],
           }}
           transition={{
             duration: shape.duration,
             repeat: Infinity,
-            ease: "linear",
+            ease: "easeInOut",
           }}
         />
       ))}
@@ -146,36 +104,18 @@ const Background = () => {
         }}
       />
 
-      {/* Particle-like dots with parallax effect */}
+      {/* Static particle-like dots */}
       <div className="absolute inset-0">
-        {particles.map((particle, i) => {
-          const parallaxStrength = 0.05; // Slightly more noticeable movement
-          
-          return (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-white rounded-full opacity-20"
-              style={{
-                left: `${particle.x}%`,
-                top: `${particle.y}%`,
-              }}
-              animate={{
-                opacity: [0.1, 0.4, 0.1],
-                scale: [1, 1.2, 1],
-                x: -(mousePosition.x - 50) * parallaxStrength,
-                y: -(mousePosition.y - 50) * parallaxStrength,
-              }}
-              transition={{
-                duration: Math.random() * 5 + 4,
-                repeat: Infinity,
-                delay: Math.random() * 3,
-                ease: "easeInOut",
-                x: { type: "spring", damping: 10, stiffness: 150 },
-                y: { type: "spring", damping: 10, stiffness: 150 },
-              }}
-            />
-          );
-        })}
+        {particles.map((particle, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full opacity-10"
+            style={{
+              left: `${particle.x}%`,
+              top: `${particle.y}%`,
+            }}
+          />
+        ))}
       </div>
     </div>
   );

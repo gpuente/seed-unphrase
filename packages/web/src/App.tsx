@@ -85,18 +85,7 @@ function App() {
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, 360, 0]
-          }}
-          transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full"
-        />
+        <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -112,56 +101,31 @@ function App() {
         className="relative z-10 min-h-screen flex flex-col"
       >
         {/* Header */}
-        <motion.header 
-          className="px-4 py-8 text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <motion.h1 
-            className="text-4xl md:text-6xl font-bold gradient-text mb-4"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
+        <header className="px-4 py-8 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-4">
             🌱 Seed Concealer
-          </motion.h1>
-          <motion.p 
-            className="text-lg text-slate-300 max-w-2xl mx-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
+          </h1>
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
             Securely hide and reveal your crypto seed phrases with advanced salt-enhanced protection
-          </motion.p>
-        </motion.header>
+          </p>
+        </header>
 
         {/* Security Indicator */}
-        <motion.div
-          className="px-4 mb-8 flex justify-center"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
+        <div className="px-4 mb-8 flex justify-center">
           <SecurityIndicator 
             security={security}
             isProcessing={isProcessing}
           />
-        </motion.div>
+        </div>
 
         {/* Mode Toggle */}
-        <motion.div
-          className="px-4 mb-12 flex justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-        >
+        <div className="px-4 mb-12 flex justify-center">
           <ModeToggle 
             mode={mode} 
             onModeChange={handleModeChange}
             disabled={isProcessing}
           />
-        </motion.div>
+        </div>
 
         {/* Main Content */}
         <div className="flex-1 flex items-center justify-center px-4 pb-8">
@@ -194,19 +158,14 @@ function App() {
         </div>
 
         {/* Footer */}
-        <motion.footer 
-          className="px-4 py-6 text-center text-sm text-slate-400"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-        >
+        <footer className="px-4 py-6 text-center text-sm text-slate-400">
           <p className="mb-2">
             ⚠️ Keep your cipher key and salt safe. This tool is for educational purposes.
           </p>
           <p>
             Built with ❤️ using React, Framer Motion, and some cryptographic techniques
           </p>
-        </motion.footer>
+        </footer>
       </motion.main>
 
       {/* Toast Notifications */}
