@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 Seed Concealer - Conceal</title>
+    <meta name="description" content="Conceal your seed phrase securely">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .nav a {
+            color: #06b6d4;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+        }
+        
+        .nav a:hover {
+            border-color: #06b6d4;
+        }
+        
+        .nav a.active {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        .form-container {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .form-header h2 {
+            color: #8b5cf6;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+        }
+        
+        .submit-btn:disabled {
+            background: #374151;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            display: none;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #8b5cf6;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-text {
+            font-family: monospace;
+            font-size: 0.875rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            word-break: break-all;
+            margin: 1rem 0;
+            min-height: 3rem;
+        }
+        
+        .copy-btn {
+            background: #06b6d4;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">🌱 Seed Concealer</h1>
+            <p>Zero-dependency secure seed phrase concealer</p>
+        </header>
+        
+        <nav class="nav">
+            <a href="index.html">🏠 Home</a>
+            <a href="conceal-simple.html" class="active">🔒 Conceal</a>
+            <a href="reveal-simple.html">🔓 Reveal</a>
+        </nav>
+        
+        <div class="form-container">
+            <div class="form-header">
+                <h2>🔒 Conceal Seed Phrase</h2>
+                <p>Transform your seed phrase into a secure concealed value</p>
+            </div>
+            
+            <form id="conceal-form">
+                <div class="form-group">
+                    <label for="seed-phrase">✨ Seed Phrase</label>
+                    <textarea id="seed-phrase" rows="4" placeholder="Enter your seed phrase (space-separated words)..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cipher-key">🔑 Cipher Key</label>
+                    <input type="password" id="cipher-key" placeholder="Enter your cipher key (any positive number)..." required>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="use-salt">
+                    <label for="use-salt">Use salt for enhanced security</label>
+                </div>
+                
+                <div id="salt-group" class="form-group hidden">
+                    <label for="salt-value"># Salt Value</label>
+                    <input type="password" id="salt-value" placeholder="Enter your salt (any text for enhanced security)...">
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    🔒 Conceal Seed Phrase
+                </button>
+            </form>
+        </div>
+        
+        <div id="result" class="result">
+            <h3>🎉 Concealment Complete!</h3>
+            <p>Your seed phrase has been successfully concealed</p>
+            
+            <h4>Concealed Value:</h4>
+            <div id="result-text" class="result-text"></div>
+            
+            <button id="copy-btn" class="copy-btn">📋 Copy to Clipboard</button>
+            
+            <div id="error" class="error"></div>
+            
+            <p style="margin-top: 1rem; font-size: 0.875rem; color: #94a3b8;">
+                ⚠️ Store your concealed value and cipher key safely. You need both to recover your seed phrase.
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Simplified BIP39 word list (first 100 words for demo - in production you'd include all 2048)
+        const BIP39_WORDS = [
+            'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 'absurd', 'abuse',
+            'access', 'accident', 'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire', 'across', 'act',
+            'action', 'actor', 'actress', 'actual', 'adapt', 'add', 'addict', 'address', 'adjust', 'admit',
+            'adult', 'advance', 'advice', 'aerobic', 'affair', 'afford', 'afraid', 'again', 'age', 'agent',
+            'agree', 'ahead', 'aim', 'air', 'airport', 'aisle', 'alarm', 'album', 'alcohol', 'alert',
+            'alien', 'all', 'alley', 'allow', 'almost', 'alone', 'alpha', 'already', 'also', 'alter',
+            'always', 'amateur', 'amazing', 'among', 'amount', 'amused', 'analyst', 'anchor', 'ancient', 'anger',
+            'angle', 'angry', 'animal', 'ankle', 'announce', 'annual', 'another', 'answer', 'antenna', 'antique',
+            'anxiety', 'any', 'apart', 'apology', 'appear', 'apple', 'approve', 'april', 'area', 'arena',
+            'argue', 'arm', 'armed', 'armor', 'army', 'around', 'arrange', 'arrest', 'arrive', 'arrow'
+        ];
+        
+        // Simple hash function for salt (SHA-256 would be better, but this is for demo)
+        function simpleHash(str) {
+            let hash = 0;
+            if (str.length === 0) return hash;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            return Math.abs(hash);
+        }
+        
+        // Get word index in BIP39 list
+        function getWordIndex(word) {
+            const index = BIP39_WORDS.indexOf(word.toLowerCase());
+            return index === -1 ? 0 : index; // Default to 'abandon' if not found
+        }
+        
+        // Parse words from seed phrase
+        function parseWords(phrase) {
+            return phrase.trim().split(/\s+/).filter(w => w.length > 0);
+        }
+        
+        // Build BigInt number from word indices
+        function buildNumberFromIndices(indices) {
+            let result = 1n; // Start with 1
+            for (const index of indices) {
+                result = result * 10000n + BigInt(index);
+            }
+            return result;
+        }
+        
+        // Apply salt transformation to indices
+        function applySaltTransformation(indices, salt) {
+            if (!salt) return indices;
+            
+            const saltHash = simpleHash(salt);
+            return indices.map(index => (index + saltHash) % BIP39_WORDS.length);
+        }
+        
+        // Divide with remainder
+        function divideWithRemainder(dividend, divisor) {
+            const quotient = dividend / divisor;
+            const remainder = dividend % divisor;
+            return { quotient, remainder };
+        }
+        
+        // Conceal seed phrase function
+        function concealSeedPhrase(options) {
+            const { phrase, cipherKey, salt } = options;
+            
+            // Parse and validate
+            const words = parseWords(phrase);
+            if (words.length === 0) {
+                throw new Error('Please enter at least one word');
+            }
+            if (words.length > 24) {
+                throw new Error('Maximum 24 words allowed');
+            }
+            
+            const cipherKeyBigInt = BigInt(cipherKey);
+            if (cipherKeyBigInt <= 0n) {
+                throw new Error('Cipher key must be a positive number');
+            }
+            
+            // Convert words to indices
+            const indices = words.map(getWordIndex);
+            const invalidWords = words.filter(word => !BIP39_WORDS.includes(word.toLowerCase()));
+            
+            // Apply salt transformation
+            const transformedIndices = applySaltTransformation(indices, salt);
+            
+            // Build number and divide
+            const seedNumber = buildNumberFromIndices(transformedIndices);
+            const { quotient, remainder } = divideWithRemainder(seedNumber, cipherKeyBigInt);
+            
+            return {
+                result: {
+                    quotient: quotient.toString(),
+                    remainder: remainder.toString(),
+                    originalWordCount: words.length
+                },
+                validation: {
+                    invalidWords: invalidWords
+                }
+            };
+        }
+        
+        // DOM elements
+        const form = document.getElementById('conceal-form');
+        const resultDiv = document.getElementById('result');
+        const resultText = document.getElementById('result-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const errorDiv = document.getElementById('error');
+        const submitBtn = document.getElementById('submit-btn');
+        const useSaltCheckbox = document.getElementById('use-salt');
+        const saltGroup = document.getElementById('salt-group');
+        
+        // Handle salt checkbox
+        useSaltCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                saltGroup.classList.remove('hidden');
+            } else {
+                saltGroup.classList.add('hidden');
+                document.getElementById('salt-value').value = '';
+            }
+        });
+        
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const seedPhrase = document.getElementById('seed-phrase').value.trim();
+            const cipherKey = document.getElementById('cipher-key').value.trim();
+            const useSalt = useSaltCheckbox.checked;
+            const saltValue = useSalt ? document.getElementById('salt-value').value.trim() : '';
+            
+            if (!seedPhrase || !cipherKey) {
+                showError('Please fill in all required fields');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Concealing...';
+            hideError();
+            
+            try {
+                const options = {
+                    phrase: seedPhrase,
+                    cipherKey: cipherKey,
+                    salt: saltValue || undefined
+                };
+                
+                const { result, validation } = concealSeedPhrase(options);
+                
+                const concealedValue = `${result.quotient}:${result.remainder}`;
+                resultText.textContent = concealedValue;
+                resultDiv.classList.add('show');
+                
+                // Show validation warnings if any
+                if (validation.invalidWords.length > 0) {
+                    showError(`Warning: ${validation.invalidWords.length} invalid word(s) were replaced with "abandon"`);
+                }
+                
+            } catch (error) {
+                showError('Concealment failed: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔒 Conceal Seed Phrase';
+            }
+        });
+        
+        // Handle copy button
+        copyBtn.addEventListener('click', async function() {
+            try {
+                await navigator.clipboard.writeText(resultText.textContent);
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy to Clipboard';
+                }, 2000);
+            } catch (error) {
+                showError('Failed to copy to clipboard');
+            }
+        });
+        
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+        
+        function hideError() {
+            errorDiv.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

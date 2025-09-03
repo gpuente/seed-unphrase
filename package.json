@@ -6,15 +6,18 @@
   "workspaces": [
     "packages/lib",
     "packages/cli",
-    "packages/web"
+    "packages/web",
+    "packages/web-secure"
   ],
   "scripts": {
-    "build": "pnpm --filter \"@seed-unphrase/lib\" build && pnpm --filter \"@seed-unphrase/cli\" build && pnpm --filter \"@seed-unphrase/web\" build",
+    "build": "pnpm --filter \"@seed-unphrase/lib\" build && pnpm --filter \"@seed-unphrase/cli\" build && pnpm --filter \"@seed-unphrase/web\" build && pnpm --filter \"@seed-unphrase/web-secure\" build",
     "build:lib": "pnpm --filter \"@seed-unphrase/lib\" build",
     "build:cli": "pnpm --filter \"@seed-unphrase/cli\" build",
     "build:web": "pnpm --filter \"@seed-unphrase/web\" build",
+    "build:web-secure": "pnpm --filter \"@seed-unphrase/web-secure\" build",
     "dev:cli": "pnpm --filter \"@seed-unphrase/cli\" dev",
     "dev:web": "pnpm --filter \"@seed-unphrase/web\" dev",
+    "dev:web-secure": "pnpm --filter \"@seed-unphrase/web-secure\" dev",
     "test": "pnpm --filter \"@seed-unphrase/lib\" test && pnpm --filter \"@seed-unphrase/cli\" test",
     "test:lib": "pnpm --filter \"@seed-unphrase/lib\" test",
     "test:cli": "pnpm --filter \"@seed-unphrase/cli\" test",

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 Seed Concealer - Reveal</title>
+    <meta name="description" content="Reveal your concealed seed phrase">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .nav a {
+            color: #06b6d4;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+        }
+        
+        .nav a:hover {
+            border-color: #06b6d4;
+        }
+        
+        .nav a.active {
+            background: #06b6d4;
+            color: white;
+        }
+        
+        .form-container {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .form-header h2 {
+            color: #06b6d4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+        }
+        
+        .submit-btn:disabled {
+            background: #374151;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            display: none;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #06b6d4;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-text {
+            font-family: monospace;
+            font-size: 0.875rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            word-break: break-all;
+            margin: 1rem 0;
+            min-height: 3rem;
+        }
+        
+        .copy-btn {
+            background: #06b6d4;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">🌱 Seed Concealer</h1>
+            <p>Zero-dependency secure seed phrase concealer</p>
+        </header>
+        
+        <nav class="nav">
+            <a href="conceal.html">🔒 Conceal</a>
+            <a href="reveal.html" class="active">🔓 Reveal</a>
+        </nav>
+        
+        <div class="form-container">
+            <div class="form-header">
+                <h2>🔓 Reveal Seed Phrase</h2>
+                <p>Transform your concealed value back to the original seed phrase</p>
+            </div>
+            
+            <form id="reveal-form">
+                <div class="form-group">
+                    <label for="concealed-value">✨ Concealed Value</label>
+                    <input type="text" id="concealed-value" placeholder="Enter your concealed value (quotient:remainder)..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cipher-key">🔑 Cipher Key</label>
+                    <input type="password" id="cipher-key" placeholder="Enter the same cipher key used for concealment..." required>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="use-salt">
+                    <label for="use-salt">Use the same salt that was used for concealment</label>
+                </div>
+                
+                <div id="salt-group" class="form-group hidden">
+                    <label for="salt-value"># Salt Value</label>
+                    <input type="password" id="salt-value" placeholder="Enter the same salt used for concealment...">
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    🔓 Reveal Seed Phrase
+                </button>
+            </form>
+        </div>
+        
+        <div id="result" class="result">
+            <h3>🎉 Reveal Complete!</h3>
+            <p>Your concealed value has been successfully decrypted</p>
+            
+            <h4>Revealed Seed Phrase:</h4>
+            <div id="result-text" class="result-text"></div>
+            
+            <button id="copy-btn" class="copy-btn">📋 Copy to Clipboard</button>
+            
+            <div id="error" class="error"></div>
+            
+            <p style="margin-top: 1rem; font-size: 0.875rem; color: #94a3b8;">
+                ⚠️ Keep your recovered seed phrase secure and never share it with anyone.
+            </p>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { revealSeedPhrase } from '@seed-unphrase/lib';
+        
+        const form = document.getElementById('reveal-form');
+        const resultDiv = document.getElementById('result');
+        const resultText = document.getElementById('result-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const errorDiv = document.getElementById('error');
+        const submitBtn = document.getElementById('submit-btn');
+        const useSaltCheckbox = document.getElementById('use-salt');
+        const saltGroup = document.getElementById('salt-group');
+        
+        // Handle salt checkbox
+        useSaltCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                saltGroup.classList.remove('hidden');
+            } else {
+                saltGroup.classList.add('hidden');
+                document.getElementById('salt-value').value = '';
+            }
+        });
+        
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const concealedValue = document.getElementById('concealed-value').value.trim();
+            const cipherKey = document.getElementById('cipher-key').value.trim();
+            const useSalt = useSaltCheckbox.checked;
+            const saltValue = useSalt ? document.getElementById('salt-value').value.trim() : '';
+            
+            if (!concealedValue || !cipherKey) {
+                showError('Please fill in all required fields');
+                return;
+            }
+            
+            if (!concealedValue.includes(':')) {
+                showError('Concealed value must be in quotient:remainder format');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Revealing...';
+            hideError();
+            
+            try {
+                const options = {
+                    concealedValue: concealedValue,
+                    cipherKey: cipherKey,
+                    salt: saltValue || undefined
+                };
+                
+                const result = revealSeedPhrase(options);
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to reveal seed phrase');
+                }
+                
+                const seedPhrase = result.words.join(' ');
+                resultText.textContent = seedPhrase;
+                resultDiv.classList.add('show');
+                
+            } catch (error) {
+                showError('Reveal failed: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔓 Reveal Seed Phrase';
+            }
+        });
+        
+        // Handle copy button
+        copyBtn.addEventListener('click', async function() {
+            try {
+                await navigator.clipboard.writeText(resultText.textContent);
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy to Clipboard';
+                }, 2000);
+            } catch (error) {
+                showError('Failed to copy to clipboard');
+            }
+        });
+        
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+        
+        function hideError() {
+            errorDiv.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

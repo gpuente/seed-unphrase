@@ -84,3 +84,4 @@ coverage
 *.tsbuildinfo
 .claude
 .playwright-mcp
+dist
