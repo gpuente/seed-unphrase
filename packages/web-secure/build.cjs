@@ -5,7 +5,12 @@ const path = require('path');
 
 const distDir = path.join(__dirname, 'dist');
 
+// Load BIP39 wordlist from the lib package
+const wordlistPath = path.join(__dirname, '..', 'lib', 'src', 'wordlist.json');
+const BIP39_WORDS = JSON.parse(fs.readFileSync(wordlistPath, 'utf8'));
+
 console.log('🚀 Starting build process...');
+console.log(`📖 Loaded ${BIP39_WORDS.length} BIP39 words from lib package`);
 
 // Clean and create dist directory
 if (fs.existsSync(distDir)) {
@@ -14,6 +19,20 @@ if (fs.existsSync(distDir)) {
 }
 fs.mkdirSync(distDir, { recursive: true });
 console.log('📁 Created dist directory');
+
+// Function to replace BIP39 word list with efficient format
+function replaceBIP39WordList(htmlContent) {
+  // Create a more efficient word list format using string split
+  const efficientWordList = `const BIP39_WORDS = '${BIP39_WORDS.join(' ')}' .split(' ');`;
+  
+  // Replace the massive inline array with the efficient version
+  const updatedContent = htmlContent.replace(
+    /const BIP39_WORDS = \[[\s\S]*?\];/,
+    efficientWordList
+  );
+  
+  return updatedContent;
+}
 
 // Function to add PWA meta tags and service worker registration to HTML
 function addPWAToHtml(htmlContent) {
@@ -117,6 +136,9 @@ const htmlFiles = [
 htmlFiles.forEach(file => {
   if (fs.existsSync(file.src)) {
     let content = fs.readFileSync(file.src, 'utf-8');
+    
+    // Replace BIP39 word list with efficient format
+    content = replaceBIP39WordList(content);
     
     // Add PWA functionality
     content = addPWAToHtml(content);
