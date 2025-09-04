@@ -804,70 +804,51 @@ const manifest = {
 fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 console.log('✓ Created PWA manifest.json');
 
-// Create service worker for offline functionality
-const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-secure-v1.0.3';
+// Create service worker for offline functionality - Fixed for proper offline navigation
+const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-secure-v1.0.4';
 const STATIC_CACHE_URLS = [
-  './',
-  './index.html',
-  './conceal.html',
-  './reveal.html', 
-  './manifest.json',
-  './favicon.ico',
-  './favicon.png',
-  './icon-512.png',
-  './icon-192.svg',
-  './icon-512.svg'
+  '/',
+  '/index.html',
+  '/conceal.html',
+  '/reveal.html', 
+  '/manifest.json',
+  '/favicon.ico',
+  '/favicon.png',
+  '/icon-512.png',
+  '/icon-192.svg',
+  '/icon-512.svg'
 ];
 
 // Additional caching strategies for iOS PWA
-const RUNTIME_CACHE = 'runtime-cache-v1.0.3';
+const RUNTIME_CACHE = 'runtime-cache-v1.0.4';
+const NAVIGATE_FALLBACK_URL = '/index.html';
 
-// Install event - cache static resources with iOS-specific handling
+// Install event - cache static resources (simplified like Workbox)
 self.addEventListener('install', event => {
   console.log('Service Worker: Installing...');
   event.waitUntil(
-    Promise.all([
-      // Cache static files
-      caches.open(CACHE_NAME).then(cache => {
+    caches.open(CACHE_NAME)
+      .then(cache => {
         console.log('Service Worker: Caching static files');
-        return Promise.all(
-          STATIC_CACHE_URLS.map(url => {
-            // iOS Safari requires explicit cache headers for PWA offline
-            const request = new Request(url, {
-              cache: 'reload',
-              credentials: 'same-origin'
-            });
-            return fetch(request)
-              .then(response => {
-                if (response.status === 200) {
-                  return cache.put(url, response);
-                }
-                throw new Error(\`Failed to fetch \${url}: \${response.status}\`);
-              })
-              .catch(err => {
-                console.log('Failed to cache', url, ':', err);
-                // Try fallback caching
-                return cache.add(url).catch(() => {
-                  console.warn('Fallback caching also failed for', url);
-                });
-              });
-          })
-        );
-      }),
-      // Initialize runtime cache
-      caches.open(RUNTIME_CACHE)
-    ])
-    .then(() => {
-      console.log('Service Worker: Install complete');
-      return self.skipWaiting();
-    })
-    .catch(error => {
-      console.error('Service Worker: Install failed', error);
-    })
+        // Add all URLs to cache with consistent path handling
+        return cache.addAll(STATIC_CACHE_URLS.map(url => {
+          // Convert to full URL for consistent caching
+          return new URL(url, self.location.origin).href;
+        }));
+      })
+      .then(() => {
+        console.log('Service Worker: Install complete');
+        // Force immediate activation like Workbox skipWaiting
+        return self.skipWaiting();
+      })
+      .catch(error => {
+        console.error('Service Worker: Install failed', error);
+        throw error;
+      })
   );
 });
 
-// Activate event - clean up old caches with iOS-specific handling  
+// Activate event - clean up old caches and claim clients immediately (like Workbox)
 self.addEventListener('activate', event => {
   console.log('Service Worker: Activating...');
   event.waitUntil(
@@ -884,24 +865,13 @@ self.addEventListener('activate', event => {
       })
       .then(() => {
         console.log('Service Worker: Activation complete');
-        // Force claim clients immediately for iOS PWA
+        // Immediately claim all clients like Workbox clientsClaim
         return self.clients.claim();
-      })
-      .then(() => {
-        // Notify all clients that SW is ready (important for iOS)
-        return self.clients.matchAll().then(clients => {
-          clients.forEach(client => {
-            client.postMessage({
-              type: 'SW_ACTIVATED',
-              message: 'Service Worker activated and ready for offline use'
-            });
-          });
-        });
       })
   );
 });
 
-// Enhanced fetch event - iOS PWA optimized offline support
+// Fetch event handler - Navigation-first strategy like Workbox NavigationRoute
 self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -913,138 +883,130 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // iOS PWA cache-first strategy for better offline support
-  event.respondWith(
-    caches.match(event.request)
-      .then(cachedResponse => {
-        if (cachedResponse) {
-          console.log('Service Worker: Serving from cache:', event.request.url);
-          return cachedResponse;
-        }
+  // Check if this is a navigation request (page load/refresh/link click)
+  const isNavigationRequest = event.request.mode === 'navigate' || 
+                            event.request.destination === 'document' ||
+                            (event.request.method === 'GET' && 
+                             event.request.headers.get('accept')?.includes('text/html'));
 
-        // Handle different URL patterns
-        const url = new URL(event.request.url);
-        const pathname = url.pathname;
-        
-        // Root requests
-        if (pathname === '/' || pathname === '' || pathname === '/index.html') {
-          return caches.match('./index.html').then(response => {
-            if (response) return response;
-            return caches.match('index.html');
-          });
-        }
-        
-        // Specific HTML files
-        if (pathname.endsWith('.html') || pathname.endsWith('/')) {
-          const htmlFile = pathname.replace(/\/$/, '') + (pathname.endsWith('.html') ? '' : '.html');
-          const cleanFile = htmlFile.replace(/^\//, './');
-          return caches.match(cleanFile).then(response => {
-            if (response) return response;
-            return caches.match(htmlFile.replace(/^\//, ''));
-          });
-        }
+  if (isNavigationRequest) {
+    console.log('Service Worker: Navigation request for', event.request.url);
+    // For ALL navigation requests, implement Workbox-like NavigationRoute
+    event.respondWith(handleNavigationRequest(event.request));
+  } else {
+    // For non-navigation requests (CSS, JS, images, etc.), use cache-first
+    console.log('Service Worker: Resource request for', event.request.url);
+    event.respondWith(handleResourceRequest(event.request));
+  }
+});
 
-        // For iOS PWA: Always try cache first, then network
-        return caches.open(CACHE_NAME).then(cache => {
-          // Try exact match first
-          return cache.match(event.request).then(response => {
-            if (response) return response;
-            
-            // Try with relative path
-            const relativeUrl = event.request.url.replace(self.location.origin, '.');
-            return cache.match(relativeUrl);
-          });
-        }).then(cachedResponse => {
-          if (cachedResponse) {
-            return cachedResponse;
+// Handle navigation requests - Always fallback to index.html when offline (like Workbox)
+function handleNavigationRequest(request) {
+  return caches.match(request)
+    .then(cachedResponse => {
+      if (cachedResponse) {
+        console.log('Service Worker: Serving cached page:', request.url);
+        return cachedResponse;
+      }
+      
+      // Try to fetch from network
+      return fetch(request)
+        .then(response => {
+          if (response.status === 200) {
+            // Cache successful navigation responses
+            const responseToCache = response.clone();
+            caches.open(RUNTIME_CACHE).then(cache => {
+              cache.put(request, responseToCache);
+            });
+            return response;
           }
-          
-          // Network fallback for iOS
-          return fetch(event.request.clone())
-            .then(response => {
-              // Cache successful responses for future offline use
-              if (response && response.status === 200) {
-                caches.open(RUNTIME_CACHE).then(cache => {
-                  cache.put(event.request, response.clone());
-                });
-              }
-              return response;
-            })
-            .catch(networkError => {
-              console.log('Service Worker: Network failed, using offline strategy');
-              
-              // iOS-specific offline fallback
-              if (event.request.destination === 'document' || 
-                  (event.request.headers.get('accept') && 
-                   event.request.headers.get('accept').includes('text/html'))) {
-                
-                // Return the most appropriate HTML file
-                return caches.match('./index.html')
-                  .then(response => response || caches.match('index.html'))
-                  .then(response => response || caches.match('./conceal.html'))
-                  .then(response => response || caches.match('./reveal.html'))
-                  .then(response => {
-                    if (response) {
-                      console.log('Service Worker: Serving offline HTML');
-                      return response;
-                    }
-                    
-                    // Last resort: create offline page
-                    return new Response(\`
-                      <!DOCTYPE html>
-                      <html>
-                        <head>
-                          <title>Offline - Seed Concealer</title>
-                          <meta charset="UTF-8">
-                          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                          <style>
-                            body { 
-                              font-family: Arial, sans-serif; 
-                              text-align: center; 
-                              padding: 50px;
-                              background: #0f172a;
-                              color: #fff;
-                            }
-                            .offline-message {
-                              background: #8b5cf6;
-                              padding: 20px;
-                              border-radius: 10px;
-                              max-width: 400px;
-                              margin: 0 auto;
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="offline-message">
-                            <h1>🌱 Seed Concealer</h1>
-                            <h2>You're Offline</h2>
-                            <p>This PWA works offline! The page you requested isn't cached yet.</p>
-                            <p><a href="/" style="color: #06b6d4;">Return to Home</a></p>
-                          </div>
-                        </body>
-                      </html>
-                    \`, {
-                      status: 200,
-                      headers: new Headers({
-                        'Content-Type': 'text/html'
-                      })
-                    });
-                  });
+          throw new Error(\`Network response not ok: \${response.status}\`);
+        })
+        .catch(() => {
+          // Network failed - serve cached fallback (like Workbox NavigationRoute)
+          console.log('Service Worker: Network failed for navigation, serving fallback');
+          return caches.match(NAVIGATE_FALLBACK_URL)
+            .then(fallbackResponse => {
+              if (fallbackResponse) {
+                console.log('Service Worker: Serving navigation fallback (/index.html)');
+                return fallbackResponse;
               }
               
-              // For other resources
-              return new Response('Offline - Resource not available', {
-                status: 503,
-                statusText: 'Service Unavailable',
+              // Final fallback if index.html not cached
+              return new Response(\`
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <title>Offline - Seed Concealer</title>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                      body { 
+                        font-family: Arial, sans-serif; 
+                        text-align: center; 
+                        padding: 50px;
+                        background: #0f172a;
+                        color: #fff;
+                      }
+                      .offline-message {
+                        background: #8b5cf6;
+                        padding: 20px;
+                        border-radius: 10px;
+                        max-width: 400px;
+                        margin: 0 auto;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="offline-message">
+                      <h1>🌱 Seed Concealer</h1>
+                      <h2>Offline Mode</h2>
+                      <p>This PWA works offline! Try refreshing the page.</p>
+                      <p><button onclick="location.reload()">Refresh</button></p>
+                    </div>
+                  </body>
+                </html>
+              \`, {
+                status: 200,
                 headers: new Headers({
-                  'Content-Type': 'text/plain'
+                  'Content-Type': 'text/html'
                 })
               });
             });
         });
-      })
-  );
-});
+    });
+}
+
+// Handle resource requests (CSS, JS, images) - Cache-first strategy
+function handleResourceRequest(request) {
+  return caches.match(request)
+    .then(cachedResponse => {
+      if (cachedResponse) {
+        console.log('Service Worker: Serving cached resource:', request.url);
+        return cachedResponse;
+      }
+      
+      // Try network for resources
+      return fetch(request)
+        .then(response => {
+          if (response.status === 200) {
+            // Cache successful resource responses
+            const responseToCache = response.clone();
+            caches.open(RUNTIME_CACHE).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          console.log('Service Worker: Resource not available offline:', request.url);
+          return new Response('Resource not available offline', {
+            status: 503,
+            statusText: 'Service Unavailable'
+          });
+        });
+    });
+}
 
 // Handle messages from the main thread
 self.addEventListener('message', event => {
