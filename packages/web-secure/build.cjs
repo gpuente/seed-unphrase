@@ -307,45 +307,95 @@ function addSecurityProtection(htmlContent) {
                     return Array.from({length: wordCount}, () => words[Math.floor(Math.random() * words.length)]).join(' ');
                 },
                 
-                // Anti-debugging protection
+                // Anti-debugging protection (mobile-aware)
                 setupAntiDebugging() {
+                    // Detect if we're on mobile to avoid false positives
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                                   ('ontouchstart' in window) ||
+                                   (navigator.maxTouchPoints > 0) ||
+                                   (window.innerWidth <= 768);
+                    
+                    if (isMobile) {
+                        // On mobile, only use console detection with higher threshold
+                        let consoleOpen = false;
+                        const detectConsole = () => {
+                            try {
+                                const start = Date.now();
+                                console.log('%c', 'color: transparent');
+                                const end = Date.now();
+                                // Higher threshold for mobile to avoid false positives
+                                if (end - start > 200) {
+                                    if (!consoleOpen) {
+                                        consoleOpen = true;
+                                        this.onDebuggerDetected();
+                                    }
+                                } else {
+                                    if (consoleOpen) {
+                                        consoleOpen = false;
+                                        this.onDebuggerClosed();
+                                    }
+                                }
+                            } catch (e) {
+                                // Ignore errors on mobile
+                            }
+                        };
+                        
+                        // Less frequent checks on mobile
+                        setInterval(detectConsole, 3000);
+                        return;
+                    }
+                    
+                    // Desktop debugging detection
                     let devtools = false;
                     const threshold = 160;
                     
                     setInterval(() => {
-                        if (window.outerHeight - window.innerHeight > threshold || 
-                            window.outerWidth - window.innerWidth > threshold) {
-                            if (!devtools) {
-                                devtools = true;
-                                this.isDebuggerOpen = true;
-                                this.onDebuggerDetected();
+                        try {
+                            const heightDiff = window.outerHeight - window.innerHeight;
+                            const widthDiff = window.outerWidth - window.innerWidth;
+                            
+                            if (heightDiff > threshold || widthDiff > threshold) {
+                                if (!devtools) {
+                                    devtools = true;
+                                    this.isDebuggerOpen = true;
+                                    this.onDebuggerDetected();
+                                }
+                            } else {
+                                if (devtools) {
+                                    devtools = false;
+                                    this.isDebuggerOpen = false;
+                                    this.onDebuggerClosed();
+                                }
                             }
-                        } else {
-                            if (devtools) {
-                                devtools = false;
-                                this.isDebuggerOpen = false;
-                                this.onDebuggerClosed();
-                            }
+                        } catch (e) {
+                            // Ignore measurement errors
                         }
-                    }, 500);
+                    }, 1000);
                     
-                    // Console detection
+                    // Console detection for desktop
                     let consoleOpen = false;
                     const detectConsole = () => {
-                        const start = Date.now();
-                        console.log('%c', 'color: transparent');
-                        const end = Date.now();
-                        if (end - start > 100) {
-                            if (!consoleOpen) {
-                                consoleOpen = true;
-                                this.onDebuggerDetected();
+                        try {
+                            const start = Date.now();
+                            console.log('%c', 'color: transparent');
+                            const end = Date.now();
+                            if (end - start > 100) {
+                                if (!consoleOpen) {
+                                    consoleOpen = true;
+                                    this.onDebuggerDetected();
+                                }
+                            } else {
+                                if (consoleOpen) {
+                                    consoleOpen = false;
+                                    this.onDebuggerClosed();
+                                }
                             }
-                        } else {
-                            consoleOpen = false;
+                        } catch (e) {
+                            // Ignore console detection errors
                         }
                     };
                     
-                    setInterval(detectConsole, 1000);
+                    setInterval(detectConsole, 2000);
                 },
                 
                 onDebuggerDetected() {
@@ -498,25 +548,32 @@ function addSecurityProtection(htmlContent) {
                 });
             };
             
-            // Observe DOM changes to protect new inputs
-            if (typeof MutationObserver !== 'undefined') {
-                const observer = new MutationObserver((mutations) => {
-                    let shouldCheck = false;
-                    mutations.forEach((mutation) => {
-                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                            shouldCheck = true;
+            // Observe DOM changes to protect new inputs (wait for body to be ready)
+            const startObserver = () => {
+                if (typeof MutationObserver !== 'undefined' && document.body) {
+                    const observer = new MutationObserver((mutations) => {
+                        let shouldCheck = false;
+                        mutations.forEach((mutation) => {
+                            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                                shouldCheck = true;
+                            }
+                        });
+                        if (shouldCheck) {
+                            setTimeout(protectSensitiveInputs, 50);
                         }
                     });
-                    if (shouldCheck) {
-                        setTimeout(protectSensitiveInputs, 50);
-                    }
-                });
-                
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-            }
+                    
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                } else {
+                    // Retry if body not ready
+                    setTimeout(startObserver, 100);
+                }
+            };
+            
+            startObserver();
             
             // Make SecurityManager available globally for form handling
             window.SecurityManager = SecurityManager;
@@ -748,7 +805,7 @@ fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(manifest, n
 console.log('✓ Created PWA manifest.json');
 
 // Create service worker for offline functionality
-const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-secure-v1.0.2';
+const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-secure-v1.0.3';
 const STATIC_CACHE_URLS = [
   './',
   './index.html',
@@ -762,35 +819,55 @@ const STATIC_CACHE_URLS = [
   './icon-512.svg'
 ];
 
-// Install event - cache static resources
+// Additional caching strategies for iOS PWA
+const RUNTIME_CACHE = 'runtime-cache-v1.0.3';
+
+// Install event - cache static resources with iOS-specific handling
 self.addEventListener('install', event => {
   console.log('Service Worker: Installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Service Worker: Caching files');
-        // Cache each file individually for better error handling
+    Promise.all([
+      // Cache static files
+      caches.open(CACHE_NAME).then(cache => {
+        console.log('Service Worker: Caching static files');
         return Promise.all(
           STATIC_CACHE_URLS.map(url => {
-            return cache.add(url).catch(err => {
-              console.log('Failed to cache', url, ':', err);
-              // Don't fail the entire installation for individual file failures
-              return Promise.resolve();
+            // iOS Safari requires explicit cache headers for PWA offline
+            const request = new Request(url, {
+              cache: 'reload',
+              credentials: 'same-origin'
             });
+            return fetch(request)
+              .then(response => {
+                if (response.status === 200) {
+                  return cache.put(url, response);
+                }
+                throw new Error(\`Failed to fetch \${url}: \${response.status}\`);
+              })
+              .catch(err => {
+                console.log('Failed to cache', url, ':', err);
+                // Try fallback caching
+                return cache.add(url).catch(() => {
+                  console.warn('Fallback caching also failed for', url);
+                });
+              });
           })
         );
-      })
-      .then(() => {
-        console.log('Service Worker: Install complete');
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('Service Worker: Cache failed', error);
-      })
+      }),
+      // Initialize runtime cache
+      caches.open(RUNTIME_CACHE)
+    ])
+    .then(() => {
+      console.log('Service Worker: Install complete');
+      return self.skipWaiting();
+    })
+    .catch(error => {
+      console.error('Service Worker: Install failed', error);
+    })
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches with iOS-specific handling  
 self.addEventListener('activate', event => {
   console.log('Service Worker: Activating...');
   event.waitUntil(
@@ -798,7 +875,7 @@ self.addEventListener('activate', event => {
       .then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
+            if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
               console.log('Service Worker: Clearing old cache', cacheName);
               return caches.delete(cacheName);
             }
@@ -807,23 +884,36 @@ self.addEventListener('activate', event => {
       })
       .then(() => {
         console.log('Service Worker: Activation complete');
+        // Force claim clients immediately for iOS PWA
         return self.clients.claim();
+      })
+      .then(() => {
+        // Notify all clients that SW is ready (important for iOS)
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'SW_ACTIVATED',
+              message: 'Service Worker activated and ready for offline use'
+            });
+          });
+        });
       })
   );
 });
 
-// Enhanced fetch event - robust offline support
+// Enhanced fetch event - iOS PWA optimized offline support
 self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip external requests and chrome-extension requests
+  // Skip external requests and extension requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
+  // iOS PWA cache-first strategy for better offline support
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
@@ -832,82 +922,126 @@ self.addEventListener('fetch', event => {
           return cachedResponse;
         }
 
-        // Handle root requests
+        // Handle different URL patterns
         const url = new URL(event.request.url);
         const pathname = url.pathname;
         
-        if (pathname === '/' || pathname === '') {
-          return caches.match('./index.html');
+        // Root requests
+        if (pathname === '/' || pathname === '' || pathname === '/index.html') {
+          return caches.match('./index.html').then(response => {
+            if (response) return response;
+            return caches.match('index.html');
+          });
         }
         
-        // Handle HTML file requests without .html extension
-        if (!pathname.includes('.') && pathname !== '/') {
-          const htmlPath = './' + pathname.replace(/^\//, '') + '.html';
-          return caches.match(htmlPath);
+        // Specific HTML files
+        if (pathname.endsWith('.html') || pathname.endsWith('/')) {
+          const htmlFile = pathname.replace(/\/$/, '') + (pathname.endsWith('.html') ? '' : '.html');
+          const cleanFile = htmlFile.replace(/^\//, './');
+          return caches.match(cleanFile).then(response => {
+            if (response) return response;
+            return caches.match(htmlFile.replace(/^\//, ''));
+          });
         }
 
-        // Try network first, then cache fallback when offline
-        return fetch(event.request)
-          .then(response => {
-            // Only cache successful responses
-            if (response && response.status === 200 && response.type === 'basic') {
-              // Clone the response since it's a stream
-              const responseToCache = response.clone();
-              
-              // Add to cache asynchronously
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
-            }
+        // For iOS PWA: Always try cache first, then network
+        return caches.open(CACHE_NAME).then(cache => {
+          // Try exact match first
+          return cache.match(event.request).then(response => {
+            if (response) return response;
             
-            return response;
-          })
-          .catch(error => {
-            console.log('Service Worker: Network failed, serving from cache:', error);
-            
-            // Comprehensive offline fallback strategy
-            if (event.request.destination === 'document' || 
-                (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
-              
-              // Try specific HTML files in order of preference
-              return caches.match('./index.html')
-                .then(response => response || caches.match('./conceal.html'))
-                .then(response => response || caches.match('./reveal.html'))
-                .then(response => {
-                  if (response) {
-                    console.log('Service Worker: Serving HTML fallback');
-                    return response;
-                  }
-                  throw new Error('No HTML files in cache');
-                });
-            }
-            
-            // For other resources, try different cache strategies
-            return caches.match(event.request.url)
-              .then(response => {
-                if (response) return response;
-                
-                // Try matching with different URL patterns
-                const relativeUrl = event.request.url.replace(self.location.origin, '.');
-                return caches.match(relativeUrl);
-              })
-              .then(response => {
-                if (response) {
-                  console.log('Service Worker: Serving cached resource');
-                  return response;
-                }
-                
-                // Final fallback: return a basic error response
-                return new Response('Offline - Resource not available', {
-                  status: 503,
-                  statusText: 'Service Unavailable',
-                  headers: new Headers({
-                    'Content-Type': 'text/plain'
-                  })
-                });
-              });
+            // Try with relative path
+            const relativeUrl = event.request.url.replace(self.location.origin, '.');
+            return cache.match(relativeUrl);
           });
+        }).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          
+          // Network fallback for iOS
+          return fetch(event.request.clone())
+            .then(response => {
+              // Cache successful responses for future offline use
+              if (response && response.status === 200) {
+                caches.open(RUNTIME_CACHE).then(cache => {
+                  cache.put(event.request, response.clone());
+                });
+              }
+              return response;
+            })
+            .catch(networkError => {
+              console.log('Service Worker: Network failed, using offline strategy');
+              
+              // iOS-specific offline fallback
+              if (event.request.destination === 'document' || 
+                  (event.request.headers.get('accept') && 
+                   event.request.headers.get('accept').includes('text/html'))) {
+                
+                // Return the most appropriate HTML file
+                return caches.match('./index.html')
+                  .then(response => response || caches.match('index.html'))
+                  .then(response => response || caches.match('./conceal.html'))
+                  .then(response => response || caches.match('./reveal.html'))
+                  .then(response => {
+                    if (response) {
+                      console.log('Service Worker: Serving offline HTML');
+                      return response;
+                    }
+                    
+                    // Last resort: create offline page
+                    return new Response(\`
+                      <!DOCTYPE html>
+                      <html>
+                        <head>
+                          <title>Offline - Seed Concealer</title>
+                          <meta charset="UTF-8">
+                          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                          <style>
+                            body { 
+                              font-family: Arial, sans-serif; 
+                              text-align: center; 
+                              padding: 50px;
+                              background: #0f172a;
+                              color: #fff;
+                            }
+                            .offline-message {
+                              background: #8b5cf6;
+                              padding: 20px;
+                              border-radius: 10px;
+                              max-width: 400px;
+                              margin: 0 auto;
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="offline-message">
+                            <h1>🌱 Seed Concealer</h1>
+                            <h2>You're Offline</h2>
+                            <p>This PWA works offline! The page you requested isn't cached yet.</p>
+                            <p><a href="/" style="color: #06b6d4;">Return to Home</a></p>
+                          </div>
+                        </body>
+                      </html>
+                    \`, {
+                      status: 200,
+                      headers: new Headers({
+                        'Content-Type': 'text/html'
+                      })
+                    });
+                  });
+              }
+              
+              // For other resources
+              return new Response('Offline - Resource not available', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: new Headers({
+                  'Content-Type': 'text/plain'
+                })
+              });
+            });
+        });
       })
   );
 });
