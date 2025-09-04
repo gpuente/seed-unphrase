@@ -105,6 +105,452 @@ function addMobileResponsiveCSS(htmlContent) {
     </style>`);
 }
 
+// Function to add browser extension protection and security measures
+function addSecurityProtection(htmlContent) {
+  // Create comprehensive security JavaScript
+  const securityScript = `
+    <script>
+        // Browser Extension Protection System
+        (function() {
+            'use strict';
+            
+            // Security state management
+            const SecurityManager = {
+                isDebuggerOpen: false,
+                secureInputs: new Map(),
+                decoyFields: [],
+                
+                init() {
+                    this.createSecureInputWrapper();
+                    this.setupAntiDebugging();
+                    this.setupClipboardProtection();
+                    this.addDecoyFields();
+                    this.setupMemoryProtection();
+                },
+                
+                // Create secure Shadow DOM wrapper for sensitive inputs
+                createSecureInputWrapper() {
+                    const style = document.createElement('style');
+                    style.textContent = \`
+                        .secure-input-wrapper {
+                            display: inline-block;
+                            position: relative;
+                            width: 100%;
+                        }
+                        .secure-input {
+                            width: 100%;
+                            padding: 0.75rem;
+                            border: 2px solid #374151;
+                            border-radius: 0.5rem;
+                            background: #1f2937;
+                            color: #f3f4f6;
+                            font-size: 1rem;
+                            transition: border-color 0.2s;
+                        }
+                        .secure-input:focus {
+                            outline: none;
+                            border-color: #8b5cf6;
+                        }
+                    \`;
+                    document.head.appendChild(style);
+                },
+                
+                // Create Shadow DOM protected input
+                createShadowInput(originalInput) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'secure-input-wrapper';
+                    
+                    // Create shadow root with closed mode for maximum protection
+                    const shadow = wrapper.attachShadow({ mode: 'closed' });
+                    
+                    // Clone styles into shadow DOM
+                    const style = document.createElement('style');
+                    style.textContent = \`
+                        :host {
+                            display: inline-block;
+                            width: 100%;
+                        }
+                        .shadow-input {
+                            width: 100%;
+                            padding: 0.75rem;
+                            border: 2px solid #374151;
+                            border-radius: 0.5rem;
+                            background: #1f2937;
+                            color: #f3f4f6;
+                            font-size: 1rem;
+                            transition: border-color 0.2s;
+                            box-sizing: border-box;
+                            font-family: inherit;
+                        }
+                        .shadow-input:focus {
+                            outline: none;
+                            border-color: #8b5cf6;
+                        }
+                    \`;
+                    shadow.appendChild(style);
+                    
+                    // Create the actual input
+                    const shadowInput = document.createElement(originalInput.tagName.toLowerCase());
+                    shadowInput.className = 'shadow-input';
+                    shadowInput.type = originalInput.type;
+                    shadowInput.placeholder = originalInput.placeholder;
+                    shadowInput.required = originalInput.required;
+                    shadowInput.rows = originalInput.rows;
+                    
+                    // Memory-only value storage (never in DOM)
+                    let memoryValue = '';
+                    let valueFragments = [];
+                    
+                    // Override value property
+                    Object.defineProperty(shadowInput, 'value', {
+                        get() { return memoryValue; },
+                        set(val) { 
+                            memoryValue = val;
+                            this.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+                    
+                    // Handle input with fragmentation
+                    shadowInput.addEventListener('input', (e) => {
+                        const inputValue = e.target.value || shadowInput.textContent;
+                        
+                        // Fragment the input across multiple memory locations
+                        valueFragments = [];
+                        for (let i = 0; i < inputValue.length; i += 3) {
+                            valueFragments.push(inputValue.substr(i, 3));
+                        }
+                        memoryValue = inputValue;
+                        
+                        // Clear the actual DOM value
+                        if (e.target.value !== undefined) {
+                            setTimeout(() => e.target.value = '•'.repeat(inputValue.length), 0);
+                        }
+                        
+                        // Dispatch to original input for form compatibility
+                        if (originalInput.id && originalInput.id.includes('seed')) {
+                            // Only show masked characters for seed phrase
+                            originalInput.value = '•'.repeat(inputValue.length);
+                        } else {
+                            originalInput.value = inputValue;
+                        }
+                        originalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    });
+                    
+                    // Prevent copy/paste for sensitive fields
+                    if (originalInput.id && (originalInput.id.includes('seed') || originalInput.id.includes('cipher') || originalInput.id.includes('salt'))) {
+                        shadowInput.addEventListener('copy', (e) => {
+                            e.preventDefault();
+                            this.showSecurityWarning('Copy operation blocked for security');
+                        });
+                        
+                        shadowInput.addEventListener('cut', (e) => {
+                            e.preventDefault();
+                            this.showSecurityWarning('Cut operation blocked for security');
+                        });
+                        
+                        shadowInput.addEventListener('paste', (e) => {
+                            e.preventDefault();
+                            // Allow paste but clear clipboard after
+                            setTimeout(() => {
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText('').catch(() => {});
+                                }
+                            }, 100);
+                        });
+                        
+                        // Disable autocomplete
+                        shadowInput.autocomplete = 'off';
+                        shadowInput.spellcheck = false;
+                    }
+                    
+                    shadow.appendChild(shadowInput);
+                    
+                    // Replace original input
+                    originalInput.style.display = 'none';
+                    originalInput.parentNode.insertBefore(wrapper, originalInput);
+                    
+                    // Store reference for memory cleanup
+                    this.secureInputs.set(originalInput.id, {
+                        wrapper,
+                        shadow,
+                        input: shadowInput,
+                        getValue: () => memoryValue,
+                        getFragments: () => valueFragments,
+                        clear: () => {
+                            memoryValue = '';
+                            valueFragments = [];
+                            shadowInput.value = '';
+                        }
+                    });
+                    
+                    return shadowInput;
+                },
+                
+                // Add decoy input fields to confuse extensions
+                addDecoyFields() {
+                    const decoyCount = Math.floor(Math.random() * 5) + 3;
+                    for (let i = 0; i < decoyCount; i++) {
+                        const decoy = document.createElement('input');
+                        decoy.type = 'password';
+                        decoy.style.cssText = 'position: absolute; left: -9999px; opacity: 0; pointer-events: none;';
+                        decoy.name = \`decoy_\${Math.random().toString(36).substr(2, 9)}\`;
+                        decoy.value = this.generateDecoyValue();
+                        decoy.tabIndex = -1;
+                        document.body.appendChild(decoy);
+                        this.decoyFields.push(decoy);
+                    }
+                },
+                
+                generateDecoyValue() {
+                    const words = ['abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract'];
+                    const wordCount = Math.floor(Math.random() * 12) + 12;
+                    return Array.from({length: wordCount}, () => words[Math.floor(Math.random() * words.length)]).join(' ');
+                },
+                
+                // Anti-debugging protection
+                setupAntiDebugging() {
+                    let devtools = false;
+                    const threshold = 160;
+                    
+                    setInterval(() => {
+                        if (window.outerHeight - window.innerHeight > threshold || 
+                            window.outerWidth - window.innerWidth > threshold) {
+                            if (!devtools) {
+                                devtools = true;
+                                this.isDebuggerOpen = true;
+                                this.onDebuggerDetected();
+                            }
+                        } else {
+                            if (devtools) {
+                                devtools = false;
+                                this.isDebuggerOpen = false;
+                                this.onDebuggerClosed();
+                            }
+                        }
+                    }, 500);
+                    
+                    // Console detection
+                    let consoleOpen = false;
+                    const detectConsole = () => {
+                        const start = Date.now();
+                        console.log('%c', 'color: transparent');
+                        const end = Date.now();
+                        if (end - start > 100) {
+                            if (!consoleOpen) {
+                                consoleOpen = true;
+                                this.onDebuggerDetected();
+                            }
+                        } else {
+                            consoleOpen = false;
+                        }
+                    };
+                    
+                    setInterval(detectConsole, 1000);
+                },
+                
+                onDebuggerDetected() {
+                    this.showSecurityWarning('⚠️ Developer tools detected! For security, consider closing them when entering sensitive data.');
+                    
+                    // Optional: Blur sensitive inputs when debugger is active
+                    this.secureInputs.forEach((secureInput) => {
+                        if (secureInput.wrapper) {
+                            secureInput.wrapper.style.filter = 'blur(3px)';
+                        }
+                    });
+                },
+                
+                onDebuggerClosed() {
+                    // Remove blur effect
+                    this.secureInputs.forEach((secureInput) => {
+                        if (secureInput.wrapper) {
+                            secureInput.wrapper.style.filter = '';
+                        }
+                    });
+                },
+                
+                // Clipboard protection
+                setupClipboardProtection() {
+                    // Clear clipboard on page unload
+                    window.addEventListener('beforeunload', () => {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText('').catch(() => {});
+                        }
+                    });
+                    
+                    // Clear sensitive data from memory on page hide
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.hidden) {
+                            this.clearSensitiveData();
+                        }
+                    });
+                },
+                
+                // Memory protection - clear sensitive data
+                setupMemoryProtection() {
+                    // Clear data on page unload
+                    window.addEventListener('beforeunload', () => {
+                        this.clearSensitiveData();
+                    });
+                    
+                    // Auto-clear after inactivity
+                    let inactivityTimer;
+                    const resetTimer = () => {
+                        clearTimeout(inactivityTimer);
+                        inactivityTimer = setTimeout(() => {
+                            this.clearSensitiveData();
+                            this.showSecurityWarning('Session cleared due to inactivity for security');
+                        }, 15 * 60 * 1000); // 15 minutes
+                    };
+                    
+                    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+                        document.addEventListener(event, resetTimer);
+                    });
+                    resetTimer();
+                },
+                
+                clearSensitiveData() {
+                    // Clear all secure inputs
+                    this.secureInputs.forEach((secureInput) => {
+                        if (secureInput.clear) {
+                            secureInput.clear();
+                        }
+                    });
+                    
+                    // Clear original inputs
+                    const sensitiveInputs = document.querySelectorAll('input[type="password"], textarea[id*="seed"]');
+                    sensitiveInputs.forEach(input => {
+                        input.value = '';
+                    });
+                    
+                    // Force garbage collection if available
+                    if (window.gc) {
+                        window.gc();
+                    }
+                },
+                
+                showSecurityWarning(message) {
+                    // Create non-intrusive security notification
+                    const notification = document.createElement('div');
+                    notification.style.cssText = \`
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+                        color: white;
+                        padding: 12px 16px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        z-index: 10000;
+                        max-width: 300px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        animation: slideIn 0.3s ease-out;
+                    \`;
+                    notification.textContent = message;
+                    
+                    const style = document.createElement('style');
+                    style.textContent = \`
+                        @keyframes slideIn {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                    \`;
+                    document.head.appendChild(style);
+                    
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                        if (style.parentNode) {
+                            style.remove();
+                        }
+                    }, 5000);
+                }
+            };
+            
+            // Initialize security system when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(() => SecurityManager.init(), 100);
+                });
+            } else {
+                setTimeout(() => SecurityManager.init(), 100);
+            }
+            
+            // Protect sensitive inputs when they appear
+            const protectSensitiveInputs = () => {
+                const sensitiveSelectors = [
+                    'input[id*="seed"]',
+                    'textarea[id*="seed"]',
+                    'input[id*="cipher"]',
+                    'input[id*="salt"]'
+                ];
+                
+                sensitiveSelectors.forEach(selector => {
+                    const inputs = document.querySelectorAll(selector);
+                    inputs.forEach(input => {
+                        if (!input.dataset.protected) {
+                            SecurityManager.createShadowInput(input);
+                            input.dataset.protected = 'true';
+                        }
+                    });
+                });
+            };
+            
+            // Observe DOM changes to protect new inputs
+            if (typeof MutationObserver !== 'undefined') {
+                const observer = new MutationObserver((mutations) => {
+                    let shouldCheck = false;
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            shouldCheck = true;
+                        }
+                    });
+                    if (shouldCheck) {
+                        setTimeout(protectSensitiveInputs, 50);
+                    }
+                });
+                
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+            
+            // Make SecurityManager available globally for form handling
+            window.SecurityManager = SecurityManager;
+            
+        })();
+    </script>`;
+
+  // Insert security script before closing head tag
+  return htmlContent.replace('</head>', `${securityScript}
+</head>`);
+}
+
+// Function to add enhanced CSP and security headers to HTML
+function addSecurityHeaders(htmlContent) {
+  // Update CSP to be more restrictive and block extensions
+  const updatedCSP = htmlContent.replace(
+    /content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self'; manifest-src 'self'; img-src 'self' data: blob:;"/,
+    `content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src 'self'; manifest-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"`
+  );
+
+  // Add additional security headers
+  const securityMetaTags = `    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow, nosnippet, noarchive">`;
+
+  // Insert security meta tags after CSP
+  return updatedCSP.replace(
+    /<meta http-equiv="Content-Security-Policy"[^>]*>/,
+    `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src 'self'; manifest-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
+${securityMetaTags}`
+  );
+}
+
 // Function to add PWA meta tags and service worker registration to HTML
 function addPWAToHtml(htmlContent) {
   // First, update CSP to allow service worker and install prompt
@@ -215,6 +661,12 @@ htmlFiles.forEach(file => {
     // Add mobile responsive CSS
     content = addMobileResponsiveCSS(content);
     
+    // Add security protection (Shadow DOM, anti-debugging, etc.)
+    content = addSecurityProtection(content);
+    
+    // Add security headers and CSP
+    content = addSecurityHeaders(content);
+    
     // Add PWA functionality
     content = addPWAToHtml(content);
     
@@ -224,7 +676,7 @@ htmlFiles.forEach(file => {
       .replace(/reveal-simple\.html/g, 'reveal.html');
     
     fs.writeFileSync(path.join(distDir, file.dest), content);
-    console.log(`✓ Enhanced and copied ${file.src} → dist/${file.dest}`);
+    console.log(`✓ Enhanced and secured ${file.src} → dist/${file.dest}`);
   }
 });
 
@@ -296,7 +748,7 @@ fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(manifest, n
 console.log('✓ Created PWA manifest.json');
 
 // Create service worker for offline functionality
-const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-v1.0.1';
+const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-secure-v1.0.2';
 const STATIC_CACHE_URLS = [
   './',
   './index.html',
@@ -317,7 +769,16 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Service Worker: Caching files');
-        return cache.addAll(STATIC_CACHE_URLS);
+        // Cache each file individually for better error handling
+        return Promise.all(
+          STATIC_CACHE_URLS.map(url => {
+            return cache.add(url).catch(err => {
+              console.log('Failed to cache', url, ':', err);
+              // Don't fail the entire installation for individual file failures
+              return Promise.resolve();
+            });
+          })
+        );
       })
       .then(() => {
         console.log('Service Worker: Install complete');
@@ -351,14 +812,14 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Enhanced fetch event - robust offline support
 self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip external requests
+  // Skip external requests and chrome-extension requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
@@ -371,46 +832,81 @@ self.addEventListener('fetch', event => {
           return cachedResponse;
         }
 
-        // Try to match with ./ prefix for root requests
-        const rootPath = event.request.url.replace(self.location.origin, '');
-        if (rootPath === '/' || rootPath === '') {
+        // Handle root requests
+        const url = new URL(event.request.url);
+        const pathname = url.pathname;
+        
+        if (pathname === '/' || pathname === '') {
           return caches.match('./index.html');
         }
+        
+        // Handle HTML file requests without .html extension
+        if (!pathname.includes('.') && pathname !== '/') {
+          const htmlPath = './' + pathname.replace(/^\//, '') + '.html';
+          return caches.match(htmlPath);
+        }
 
-        // Not in cache, try to fetch from network
-        console.log('Service Worker: Fetching from network:', event.request.url);
+        // Try network first, then cache fallback when offline
         return fetch(event.request)
           .then(response => {
-            // Don't cache non-successful responses
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
+            // Only cache successful responses
+            if (response && response.status === 200 && response.type === 'basic') {
+              // Clone the response since it's a stream
+              const responseToCache = response.clone();
+              
+              // Add to cache asynchronously
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(event.request, responseToCache);
+                });
             }
-
-            // Clone the response since it's a stream
-            const responseToCache = response.clone();
-
-            // Add to cache for future requests
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
+            
             return response;
           })
           .catch(error => {
-            console.error('Service Worker: Fetch failed (offline?):', error);
+            console.log('Service Worker: Network failed, serving from cache:', error);
             
-            // Return cached fallback for document requests when offline
-            if (event.request.destination === 'document' || event.request.headers.get('accept').includes('text/html')) {
-              return caches.match('./index.html').then(response => {
-                if (response) return response;
-                // Try other cached HTML files as fallback
-                return caches.match('./conceal.html');
-              });
+            // Comprehensive offline fallback strategy
+            if (event.request.destination === 'document' || 
+                (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
+              
+              // Try specific HTML files in order of preference
+              return caches.match('./index.html')
+                .then(response => response || caches.match('./conceal.html'))
+                .then(response => response || caches.match('./reveal.html'))
+                .then(response => {
+                  if (response) {
+                    console.log('Service Worker: Serving HTML fallback');
+                    return response;
+                  }
+                  throw new Error('No HTML files in cache');
+                });
             }
             
-            // For other requests, try to find any cached version
-            return caches.match(event.request.url.replace(self.location.origin, '.'));
+            // For other resources, try different cache strategies
+            return caches.match(event.request.url)
+              .then(response => {
+                if (response) return response;
+                
+                // Try matching with different URL patterns
+                const relativeUrl = event.request.url.replace(self.location.origin, '.');
+                return caches.match(relativeUrl);
+              })
+              .then(response => {
+                if (response) {
+                  console.log('Service Worker: Serving cached resource');
+                  return response;
+                }
+                
+                // Final fallback: return a basic error response
+                return new Response('Offline - Resource not available', {
+                  status: 503,
+                  statusText: 'Service Unavailable',
+                  headers: new Headers({
+                    'Content-Type': 'text/plain'
+                  })
+                });
+              });
           });
       })
   );
