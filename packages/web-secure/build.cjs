@@ -296,15 +296,18 @@ fs.writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(manifest, n
 console.log('✓ Created PWA manifest.json');
 
 // Create service worker for offline functionality
-const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-v1.0.0';
+const serviceWorkerContent = `const CACHE_NAME = 'seed-concealer-v1.0.1';
 const STATIC_CACHE_URLS = [
   './',
   './index.html',
   './conceal.html',
   './reveal.html', 
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  './favicon.ico',
+  './favicon.png',
+  './icon-512.png',
+  './icon-192.svg',
+  './icon-512.svg'
 ];
 
 // Install event - cache static resources
@@ -368,7 +371,13 @@ self.addEventListener('fetch', event => {
           return cachedResponse;
         }
 
-        // Not in cache, fetch from network
+        // Try to match with ./ prefix for root requests
+        const rootPath = event.request.url.replace(self.location.origin, '');
+        if (rootPath === '/' || rootPath === '') {
+          return caches.match('./index.html');
+        }
+
+        // Not in cache, try to fetch from network
         console.log('Service Worker: Fetching from network:', event.request.url);
         return fetch(event.request)
           .then(response => {
@@ -389,15 +398,19 @@ self.addEventListener('fetch', event => {
             return response;
           })
           .catch(error => {
-            console.error('Service Worker: Fetch failed:', error);
+            console.error('Service Worker: Fetch failed (offline?):', error);
             
-            // Return cached fallback for document requests
-            if (event.request.destination === 'document') {
-              return caches.match('./index.html');
+            // Return cached fallback for document requests when offline
+            if (event.request.destination === 'document' || event.request.headers.get('accept').includes('text/html')) {
+              return caches.match('./index.html').then(response => {
+                if (response) return response;
+                // Try other cached HTML files as fallback
+                return caches.match('./conceal.html');
+              });
             }
             
-            // For other requests, throw the error
-            throw error;
+            // For other requests, try to find any cached version
+            return caches.match(event.request.url.replace(self.location.origin, '.'));
           });
       })
   );
