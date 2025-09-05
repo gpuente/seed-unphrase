@@ -128,177 +128,31 @@ function addSecurityProtection(htmlContent) {
                     this.setupMemoryProtection();
                 },
                 
-                // Create secure Shadow DOM wrapper for sensitive inputs
-                createSecureInputWrapper() {
-                    const style = document.createElement('style');
-                    style.textContent = \`
-                        .secure-input-wrapper {
-                            display: inline-block;
-                            position: relative;
-                            width: 100%;
-                        }
-                        .secure-input {
-                            width: 100%;
-                            padding: 0.75rem;
-                            border: 2px solid #374151;
-                            border-radius: 0.5rem;
-                            background: #1f2937;
-                            color: #f3f4f6;
-                            font-size: 1rem;
-                            transition: border-color 0.2s;
-                        }
-                        .secure-input:focus {
-                            outline: none;
-                            border-color: #8b5cf6;
-                        }
-                    \`;
-                    document.head.appendChild(style);
-                },
-                
-                // Create Shadow DOM protected input
-                createShadowInput(originalInput) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'secure-input-wrapper';
+                // Simple input protection without Shadow DOM
+                protectInput(input) {
+                    // Basic security settings
+                    input.autocomplete = 'off';
+                    input.spellcheck = false;
                     
-                    // Create shadow root with closed mode for maximum protection
-                    const shadow = wrapper.attachShadow({ mode: 'closed' });
-                    
-                    // Clone styles into shadow DOM
-                    const style = document.createElement('style');
-                    style.textContent = \`
-                        :host {
-                            display: inline-block;
-                            width: 100%;
-                        }
-                        .shadow-input {
-                            width: 100%;
-                            padding: 0.75rem;
-                            border: 2px solid #374151;
-                            border-radius: 0.5rem;
-                            background: #1f2937;
-                            color: #f3f4f6;
-                            font-size: 1rem;
-                            transition: border-color 0.2s;
-                            box-sizing: border-box;
-                            font-family: inherit;
-                        }
-                        .shadow-input:focus {
-                            outline: none;
-                            border-color: #8b5cf6;
-                        }
-                    \`;
-                    shadow.appendChild(style);
-                    
-                    // Create the actual input
-                    const shadowInput = document.createElement(originalInput.tagName.toLowerCase());
-                    shadowInput.className = 'shadow-input';
-                    
-                    // Safely set type property (readonly for some elements like textarea)
-                    try {
-                        if (originalInput.type !== undefined) {
-                            shadowInput.type = originalInput.type;
-                        }
-                    } catch (e) {
-                        // Ignore read-only property errors for textarea elements
-                    }
-                    
-                    shadowInput.placeholder = originalInput.placeholder;
-                    shadowInput.required = originalInput.required;
-                    
-                    // Safely set rows for textarea elements
-                    if (originalInput.rows) {
-                        shadowInput.rows = originalInput.rows;
-                    }
-                    
-                    // Memory-only value storage (never in DOM)
-                    let memoryValue = '';
-                    let valueFragments = [];
-                    
-                    // Override value property
-                    Object.defineProperty(shadowInput, 'value', {
-                        get() { return memoryValue; },
-                        set(val) { 
-                            memoryValue = val;
-                            this.dispatchEvent(new Event('input', { bubbles: true }));
-                        }
-                    });
-                    
-                    // Handle input with fragmentation
-                    shadowInput.addEventListener('input', (e) => {
-                        const inputValue = e.target.value || shadowInput.textContent;
-                        
-                        // Fragment the input across multiple memory locations
-                        valueFragments = [];
-                        for (let i = 0; i < inputValue.length; i += 3) {
-                            valueFragments.push(inputValue.substr(i, 3));
-                        }
-                        memoryValue = inputValue;
-                        
-                        // Always sync the real value to original input for form functionality
-                        if (originalInput) {
-                            originalInput.value = inputValue;
-                            originalInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            originalInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        
-                        // Clear the shadow DOM value for security (but keep original synced)
-                        if (originalInput && originalInput.id && originalInput.id.includes('seed')) {
-                            setTimeout(() => {
-                                if (e.target && e.target.value !== undefined) {
-                                    e.target.value = '•'.repeat(inputValue.length);
-                                }
-                            }, 0);
-                        }
-                    });
-                    
-                    // Prevent copy/paste for sensitive fields
-                    if (originalInput.id && (originalInput.id.includes('seed') || originalInput.id.includes('cipher') || originalInput.id.includes('salt'))) {
-                        shadowInput.addEventListener('copy', (e) => {
+                    // Add copy/paste protection only for seed phrase inputs
+                    if (input.id && input.id.includes('seed')) {
+                        input.addEventListener('copy', (e) => {
                             e.preventDefault();
                             this.showSecurityWarning('Copy operation blocked for security');
                         });
                         
-                        shadowInput.addEventListener('cut', (e) => {
+                        input.addEventListener('cut', (e) => {
                             e.preventDefault();
                             this.showSecurityWarning('Cut operation blocked for security');
                         });
-                        
-                        shadowInput.addEventListener('paste', (e) => {
-                            e.preventDefault();
-                            // Allow paste but clear clipboard after
-                            setTimeout(() => {
-                                if (navigator.clipboard && navigator.clipboard.writeText) {
-                                    navigator.clipboard.writeText('').catch(() => {});
-                                }
-                            }, 100);
-                        });
-                        
-                        // Disable autocomplete
-                        shadowInput.autocomplete = 'off';
-                        shadowInput.spellcheck = false;
                     }
                     
-                    shadow.appendChild(shadowInput);
-                    
-                    // Replace original input
-                    originalInput.style.display = 'none';
-                    originalInput.parentNode.insertBefore(wrapper, originalInput);
-                    
-                    // Store reference for memory cleanup
-                    this.secureInputs.set(originalInput.id, {
-                        wrapper,
-                        shadow,
-                        input: shadowInput,
-                        getValue: () => memoryValue,
-                        getFragments: () => valueFragments,
-                        clear: () => {
-                            memoryValue = '';
-                            valueFragments = [];
-                            shadowInput.value = '';
-                        }
+                    // Store reference for cleanup (just use the original input)
+                    this.secureInputs.set(input.id, {
+                        input: input,
+                        getValue: () => input.value,
+                        clear: () => { input.value = ''; }
                     });
-                    
-                    return shadowInput;
                 },
                 
                 // Add decoy input fields to confuse extensions
@@ -555,7 +409,7 @@ function addSecurityProtection(htmlContent) {
                 setTimeout(() => SecurityManager.init(), 100);
             }
             
-            // Protect sensitive inputs when they appear
+            // Protect sensitive inputs when they appear (simplified - no Shadow DOM)
             const protectSensitiveInputs = () => {
                 const sensitiveSelectors = [
                     'input[id*="seed"]',
@@ -569,7 +423,7 @@ function addSecurityProtection(htmlContent) {
                     inputs.forEach(input => {
                         // Skip checkboxes and already protected inputs
                         if (!input.dataset.protected && input.type !== 'checkbox') {
-                            SecurityManager.createShadowInput(input);
+                            SecurityManager.protectInput(input);
                             input.dataset.protected = 'true';
                         }
                     });
