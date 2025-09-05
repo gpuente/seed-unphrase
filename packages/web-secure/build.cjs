@@ -192,10 +192,23 @@ function addSecurityProtection(htmlContent) {
                     // Create the actual input
                     const shadowInput = document.createElement(originalInput.tagName.toLowerCase());
                     shadowInput.className = 'shadow-input';
-                    shadowInput.type = originalInput.type;
+                    
+                    // Safely set type property (readonly for some elements like textarea)
+                    try {
+                        if (originalInput.type !== undefined) {
+                            shadowInput.type = originalInput.type;
+                        }
+                    } catch (e) {
+                        // Ignore read-only property errors for textarea elements
+                    }
+                    
                     shadowInput.placeholder = originalInput.placeholder;
                     shadowInput.required = originalInput.required;
-                    shadowInput.rows = originalInput.rows;
+                    
+                    // Safely set rows for textarea elements
+                    if (originalInput.rows) {
+                        shadowInput.rows = originalInput.rows;
+                    }
                     
                     // Memory-only value storage (never in DOM)
                     let memoryValue = '';
@@ -221,19 +234,21 @@ function addSecurityProtection(htmlContent) {
                         }
                         memoryValue = inputValue;
                         
-                        // Clear the actual DOM value
-                        if (e.target.value !== undefined) {
-                            setTimeout(() => e.target.value = '•'.repeat(inputValue.length), 0);
+                        // Always sync the real value to original input for form functionality
+                        if (originalInput) {
+                            originalInput.value = inputValue;
+                            originalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            originalInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         
-                        // Dispatch to original input for form compatibility
-                        if (originalInput.id && originalInput.id.includes('seed')) {
-                            // Only show masked characters for seed phrase
-                            originalInput.value = '•'.repeat(inputValue.length);
-                        } else {
-                            originalInput.value = inputValue;
+                        // Clear the shadow DOM value for security (but keep original synced)
+                        if (originalInput && originalInput.id && originalInput.id.includes('seed')) {
+                            setTimeout(() => {
+                                if (e.target && e.target.value !== undefined) {
+                                    e.target.value = '•'.repeat(inputValue.length);
+                                }
+                            }, 0);
                         }
-                        originalInput.dispatchEvent(new Event('input', { bubbles: true }));
                     });
                     
                     // Prevent copy/paste for sensitive fields
@@ -516,6 +531,18 @@ function addSecurityProtection(htmlContent) {
                             style.remove();
                         }
                     }, 5000);
+                },
+                
+                // Get actual input value from secure input or fallback to regular input
+                getInputValue(inputId) {
+                    const secureInput = this.secureInputs.get(inputId);
+                    if (secureInput && secureInput.getValue) {
+                        return secureInput.getValue();
+                    }
+                    
+                    // Fallback to regular DOM input
+                    const input = document.getElementById(inputId);
+                    return input ? input.value : '';
                 }
             };
             
@@ -534,13 +561,14 @@ function addSecurityProtection(htmlContent) {
                     'input[id*="seed"]',
                     'textarea[id*="seed"]',
                     'input[id*="cipher"]',
-                    'input[id*="salt"]'
+                    'input[id*="salt"]:not([type="checkbox"])'  // Exclude checkboxes from protection
                 ];
                 
                 sensitiveSelectors.forEach(selector => {
                     const inputs = document.querySelectorAll(selector);
                     inputs.forEach(input => {
-                        if (!input.dataset.protected) {
+                        // Skip checkboxes and already protected inputs
+                        if (!input.dataset.protected && input.type !== 'checkbox') {
                             SecurityManager.createShadowInput(input);
                             input.dataset.protected = 'true';
                         }
