@@ -30,3 +30,6 @@ export {
   applySaltTransformation,
   reverseSaltTransformation
 } from './utils';
+
+// Export crypto functionality
+export * from './crypto';

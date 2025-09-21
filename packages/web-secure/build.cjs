@@ -38,44 +38,80 @@ function replaceBIP39WordList(htmlContent) {
 function addMobileResponsiveCSS(htmlContent) {
   // Add mobile-responsive CSS for navigation and PWA improvements
   const mobileCSS = `
+        /* Desktop navigation improvements */
+        .nav {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+            gap: 0.2rem !important;
+            margin-bottom: 2rem !important;
+            overflow-x: auto !important;
+            width: 100% !important;
+        }
+
+        .nav a {
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            padding: 0.4rem 0.5rem !important;
+            font-size: 0.8rem !important;
+            min-width: auto !important;
+            text-decoration: none !important;
+            border-radius: 0.5rem !important;
+            transition: all 0.2s ease !important;
+        }
+
         /* Mobile responsive improvements */
         @media (max-width: 768px) {
             .nav {
                 margin-bottom: 1.5rem;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.25rem;
             }
-            
+
             .nav a {
-                margin: 0 0.25rem;
-                padding: 0.5rem 0.75rem;
-                font-size: 0.9rem;
-                display: inline-block;
+                margin: 0;
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+                display: flex;
+                align-items: center;
+                white-space: nowrap;
+                flex: 0 0 auto;
             }
-            
+
             .form-container {
                 padding: 1.5rem;
                 margin: 0 0.5rem 2rem 0.5rem;
             }
-            
+
             .title {
                 font-size: 2rem;
             }
-            
+
             .result-display {
                 padding: 1.5rem;
                 margin: 0 0.5rem 2rem 0.5rem;
             }
         }
-        
+
         @media (max-width: 480px) {
             .nav {
                 margin-bottom: 1rem;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.1rem;
             }
-            
+
             .nav a {
-                margin: 0 0.1rem;
-                padding: 0.4rem 0.6rem;
-                font-size: 0.8rem;
+                margin: 0;
+                padding: 0.3rem 0.4rem;
+                font-size: 0.7rem;
                 min-width: auto;
+                white-space: nowrap;
+                flex: 0 0 auto;
             }
             
             .form-container, .result-display {
@@ -121,7 +157,6 @@ function addSecurityProtection(htmlContent) {
                 decoyFields: [],
                 
                 init() {
-                    this.createSecureInputWrapper();
                     this.setupAntiDebugging();
                     this.setupClipboardProtection();
                     this.addDecoyFields();
@@ -587,7 +622,9 @@ ${pwaMetaTags}`
 const htmlFiles = [
   { src: 'index.html', dest: 'index.html' },
   { src: 'conceal-simple.html', dest: 'conceal.html' },
-  { src: 'reveal-simple.html', dest: 'reveal.html' }
+  { src: 'reveal-simple.html', dest: 'reveal.html' },
+  { src: 'encrypt-text.html', dest: 'encrypt-text.html' },
+  { src: 'decrypt-text.html', dest: 'decrypt-text.html' }
 ];
 
 htmlFiles.forEach(file => {

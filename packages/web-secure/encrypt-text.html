@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Text Encryption - Seed Concealer</title>
+    <meta name="description" content="Encrypt text with AES-256 using password">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .nav a {
+            color: #06b6d4;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+        }
+
+        .nav a:hover {
+            border-color: #06b6d4;
+        }
+
+        .nav a.active {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .form-container {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-header h2 {
+            color: #8b5cf6;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .password-toggle:hover {
+            color: #e2e8f0;
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .password-strength.weak {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .password-strength.medium {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .password-strength.strong {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+        }
+
+        .password-strength.very-strong {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(75, 85, 99, 0.8);
+            color: #e2e8f0;
+            border: 1px solid #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(107, 114, 128, 0.8);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .result-display {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .result-display.show {
+            display: block;
+        }
+
+        .result-display h3 {
+            color: #10b981;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-content {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error-display {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            color: #fca5a5;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #8b5cf6;
+            margin-top: 1rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            color: #93c5fd;
+            font-size: 0.875rem;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .form-container {
+                padding: 1.5rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .nav a {
+                margin: 0 0.5rem;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🔐 Text Encryption</h1>
+            <p>Secure AES-256 text encryption with password protection</p>
+        </div>
+
+        <div class="nav">
+            <a href="index.html">🏠 Home</a>
+            <a href="conceal.html">🌱 Conceal</a>
+            <a href="reveal.html">👁️ Reveal</a>
+            <a href="encrypt-text.html" class="active">🔐 Encrypt</a>
+            <a href="decrypt-text.html">🔓 Decrypt</a>
+        </div>
+
+        <div class="info-box">
+            <strong>🔒 Security Features:</strong>
+            <ul style="margin: 0.5rem 0 0 1rem;">
+                <li>AES-256-GCM authenticated encryption</li>
+                <li>PBKDF2 key derivation with 100,000 iterations</li>
+                <li>Secure random salt and IV generation</li>
+                <li>Zero external dependencies</li>
+            </ul>
+        </div>
+
+        <div class="form-container">
+            <div class="form-header">
+                <h2>Encrypt Text</h2>
+                <p>Enter your text and password to create an encrypted message</p>
+            </div>
+
+            <form id="encryptForm">
+                <div class="form-group">
+                    <label for="plaintext">Text to Encrypt:</label>
+                    <textarea id="plaintext" rows="6" placeholder="Enter the text you want to encrypt..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <div class="password-container">
+                        <input type="password" id="password" placeholder="Enter a strong password..." required>
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">Show</button>
+                    </div>
+                    <div id="passwordStrength" class="password-strength" style="display: none;"></div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary" id="encryptBtn">
+                        🔐 Encrypt Text
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                        🗑️ Clear
+                    </button>
+                </div>
+
+                <div id="loading" class="loading">
+                    🔄 Encrypting text...
+                </div>
+
+                <div id="error" class="error-display"></div>
+            </form>
+        </div>
+
+        <div id="result" class="result-display">
+            <h3>✅ Encryption Complete</h3>
+            <p>Your encrypted text (copy and save this):</p>
+            <div id="resultContent" class="result-content"></div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" onclick="copyResult()">
+                    📋 Copy to Clipboard
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="downloadResult()">
+                    💾 Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import lib crypto functions inline to avoid bundling -->
+    <script type="module">
+        // BIP39 wordlist will be replaced by build script
+        const BIP39_WORDS = [];
+
+        // Import crypto functions from lib - these will be inlined by build script
+        // For now, we'll implement them directly since we're in web-secure
+
+        class CryptoError extends Error {
+            constructor(message, code) {
+                super(message);
+                this.name = 'CryptoError';
+                this.code = code;
+            }
+        }
+
+        const CryptoErrorCodes = {
+            CRYPTO_NOT_AVAILABLE: 'CRYPTO_NOT_AVAILABLE',
+            ENCRYPTION_FAILED: 'ENCRYPTION_FAILED',
+            INVALID_FORMAT: 'INVALID_FORMAT',
+            INVALID_PASSWORD: 'INVALID_PASSWORD'
+        };
+
+        const textEncoder = new TextEncoder();
+        const textDecoder = new TextDecoder();
+
+        function getCrypto() {
+            if (typeof window !== 'undefined' && window.crypto) {
+                return window.crypto;
+            }
+            throw new CryptoError('Web Crypto API not available', CryptoErrorCodes.CRYPTO_NOT_AVAILABLE);
+        }
+
+        function generateSecureRandom(length) {
+            const crypto = getCrypto();
+            const array = new Uint8Array(length);
+            crypto.getRandomValues(array);
+            return array;
+        }
+
+        function generateSalt() {
+            return generateSecureRandom(32);
+        }
+
+        function generateIV() {
+            return generateSecureRandom(12);
+        }
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        async function deriveKeyFromPassword(password, salt, iterations = 100000) {
+            const crypto = getCrypto();
+
+            const passwordKey = await crypto.subtle.importKey(
+                'raw',
+                textEncoder.encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+
+            const derivedKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: iterations,
+                    hash: 'SHA-256'
+                },
+                passwordKey,
+                {
+                    name: 'AES-GCM',
+                    length: 256
+                },
+                false,
+                ['encrypt']
+            );
+
+            return derivedKey;
+        }
+
+        async function encryptAES256GCM(plaintext, key, iv) {
+            const crypto = getCrypto();
+
+            const encrypted = await crypto.subtle.encrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: iv
+                },
+                key,
+                plaintext
+            );
+
+            return new Uint8Array(encrypted);
+        }
+
+        async function encryptText(plaintext, password, iterations = 100000) {
+            if (!plaintext) {
+                throw new CryptoError('Plaintext cannot be empty', CryptoErrorCodes.INVALID_FORMAT);
+            }
+
+            if (!password || password.trim().length === 0) {
+                throw new CryptoError('Password cannot be empty', CryptoErrorCodes.INVALID_PASSWORD);
+            }
+
+            try {
+                const salt = generateSalt();
+                const iv = generateIV();
+                const key = await deriveKeyFromPassword(password, salt, iterations);
+                const plaintextBytes = textEncoder.encode(plaintext);
+                const ciphertext = await encryptAES256GCM(plaintextBytes, key, iv);
+
+                return {
+                    ciphertext: arrayBufferToBase64(ciphertext),
+                    salt: arrayBufferToBase64(salt),
+                    iv: arrayBufferToBase64(iv),
+                    iterations: iterations,
+                    algorithm: 'AES-256-GCM-PBKDF2'
+                };
+            } catch (error) {
+                if (error instanceof CryptoError) {
+                    throw error;
+                }
+                throw new CryptoError(`Encryption failed: ${error.message}`, CryptoErrorCodes.ENCRYPTION_FAILED);
+            }
+        }
+
+        function estimatePasswordStrength(password) {
+            const feedback = [];
+            let score = 0;
+
+            if (password.length >= 8) score += 1;
+            else feedback.push('Use at least 8 characters');
+
+            if (password.length >= 12) score += 1;
+            else if (password.length >= 8) feedback.push('Consider using 12+ characters');
+
+            if (/[a-z]/.test(password)) score += 1;
+            else feedback.push('Include lowercase letters');
+
+            if (/[A-Z]/.test(password)) score += 1;
+            else feedback.push('Include uppercase letters');
+
+            if (/[0-9]/.test(password)) score += 1;
+            else feedback.push('Include numbers');
+
+            if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+            else feedback.push('Include special characters');
+
+            if (password.length >= 16) score += 1;
+
+            let strength = 'weak';
+            if (score >= 6) strength = 'very-strong';
+            else if (score >= 4) strength = 'strong';
+            else if (score >= 3) strength = 'medium';
+
+            if (feedback.length === 0) {
+                feedback.push('Password looks good!');
+            }
+
+            return { strength, score, feedback };
+        }
+
+        // Global functions for HTML
+        window.togglePasswordVisibility = function() {
+            const passwordInput = document.getElementById('password');
+            const toggle = document.querySelector('.password-toggle');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggle.textContent = 'Hide';
+            } else {
+                passwordInput.type = 'password';
+                toggle.textContent = 'Show';
+            }
+        };
+
+        window.clearForm = function() {
+            document.getElementById('encryptForm').reset();
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('passwordStrength').style.display = 'none';
+        };
+
+        window.copyResult = async function() {
+            const content = document.getElementById('resultContent').textContent;
+            try {
+                await navigator.clipboard.writeText(content);
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            }
+        };
+
+        window.downloadResult = function() {
+            const content = document.getElementById('resultContent').textContent;
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `encrypted-text-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // Password strength checking
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthDiv = document.getElementById('passwordStrength');
+
+            if (password.length === 0) {
+                strengthDiv.style.display = 'none';
+                return;
+            }
+
+            const strength = estimatePasswordStrength(password);
+            strengthDiv.className = `password-strength ${strength.strength}`;
+            strengthDiv.innerHTML = `
+                <strong>Strength: ${strength.strength.replace('-', ' ').toUpperCase()}</strong><br>
+                ${strength.feedback.join(', ')}
+            `;
+            strengthDiv.style.display = 'block';
+        });
+
+        // Form submission
+        document.getElementById('encryptForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            hideError();
+
+            const plaintext = document.getElementById('plaintext').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!plaintext) {
+                showError('Please enter text to encrypt');
+                return;
+            }
+
+            if (!password) {
+                showError('Please enter a password');
+                return;
+            }
+
+            const loadingDiv = document.getElementById('loading');
+            const encryptBtn = document.getElementById('encryptBtn');
+
+            try {
+                loadingDiv.classList.add('show');
+                encryptBtn.disabled = true;
+
+                const encrypted = await encryptText(plaintext, password);
+                const resultJson = JSON.stringify(encrypted, null, 2);
+
+                document.getElementById('resultContent').textContent = resultJson;
+                document.getElementById('result').classList.add('show');
+
+                // Scroll to result
+                document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Encryption error:', error);
+                showError(error.message || 'Encryption failed');
+            } finally {
+                loadingDiv.classList.remove('show');
+                encryptBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
